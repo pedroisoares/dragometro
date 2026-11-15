@@ -1,0 +1,48 @@
+<!--
+  Página SINTÉTICA, montada para testar o leitor do layout comum de consulta da NFC-e.
+  Não é uma página real de nenhuma SEFAZ. Substitua/complemente com páginas reais
+  salvas do seu estado (veja CONTRIBUTING.md).
+-->
+<html>
+  <body>
+    <div id="conteudo">
+      <div class="txtCenter">
+        <div id="u20" class="txtTopo">SUPERMERCADO EXEMPLO LTDA</div>
+        <div class="text">CNPJ: 12.345.678/0001-95</div>
+      </div>
+      <table id="tabResult">
+        <tr id="Item + 1">
+          <td valign="top">
+            <span class="txtTit">LEITE UHT INTEGRAL 1L</span>
+            <span class="RCod">(Código: 7891234567890 )</span><br />
+            <span class="Rqtd"><strong>Qtde.:</strong>2</span>
+            <span class="RUN"><strong>UN: </strong>UN</span>
+            <span class="RvlUnit"><strong>Vl. Unit.:</strong>&nbsp;5,69</span>
+          </td>
+          <td align="right" valign="top" class="txtTit noWrap">
+            Vl. Total<br /><span class="valor">11,38</span>
+          </td>
+        </tr>
+        <tr id="Item + 2">
+          <td valign="top">
+            <span class="txtTit">BANANA PRATA</span>
+            <span class="RCod">(Código: 2001 )</span><br />
+            <span class="Rqtd"><strong>Qtde.:</strong>1,235</span>
+            <span class="RUN"><strong>UN: </strong>KG</span>
+            <span class="RvlUnit"><strong>Vl. Unit.:</strong>&nbsp;6,99</span>
+          </td>
+          <td align="right" valign="top" class="txtTit noWrap">
+            Vl. Total<br /><span class="valor">8,63</span>
+          </td>
+        </tr>
+      </table>
+      <div id="totalNota">
+        <div id="linhaTotal"><label>Qtd. total de itens:</label><span class="totalNumb">2</span></div>
+        <div id="linhaTotal" class="linhaShade"><label>Valor a pagar R$:</label><span class="totalNumb txtMax">20,01</span></div>
+      </div>
+      <div id="infos">
+        <ul><li><strong>Número: </strong>12345 <strong>Série: </strong>1 <strong>Emissão: </strong>15/11/2026 13:25:00 - Via Consumidor</li></ul>
+      </div>
+    </div>
+  </body>
+</html>

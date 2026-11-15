@@ -1,0 +1,26 @@
+{
+  "name": "dragometro",
+  "private": true,
+  "description": "Dragômetro: a sua inflação pessoal, a partir dos seus cupons fiscais, comparada com o IPCA e o INPC.",
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "app": "pnpm --filter @dragometro/app start",
+    "api": "pnpm --filter @dragometro/api dev"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.11",
+    "typescript": "~6.0.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
