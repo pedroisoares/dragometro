@@ -22,14 +22,15 @@ A explicação completa das fórmulas está em [`docs/metodologia.md`](docs/meto
 
 - [x] Cálculo do índice (Jevons + Laspeyres modificado), com testes
 - [x] Leitura da chave de acesso e do QR Code da NFC-e
-- [x] Leitor da página da SEFAZ no layout mais comum (**ainda não validado com páginas reais**)
+- [x] Leitor da página da SEFAZ no layout mais comum, **validado com cupons reais de SP**
 - [x] Cliente da API SIDRA do IBGE (IPCA, INPC e subitens)
 - [x] App (iOS, Android e Web) com leitura do QR Code
 - [x] API com ponte para a SEFAZ (para a Web) e índices do IBGE
 
 Próximos passos:
 
-- [ ] Validar o leitor com cupons reais de cada estado ([ajude com o seu!](CONTRIBUTING.md))
+- [ ] Validar o leitor com cupons reais dos outros estados ([ajude com o seu!](CONTRIBUTING.md))
+- [ ] Confirmar que a consulta direta do celular passa pela proteção anti-robô do portal da SEFAZ-SP
 - [ ] Guardar as compras no aparelho (SQLite)
 - [ ] Classificar produtos nos subitens do IPCA
 - [ ] Telas de evolução por produto e de comparação com o IPCA/INPC
