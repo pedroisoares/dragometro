@@ -2,9 +2,24 @@ import { migrar } from '@dragometro/armazenamento';
 import { Stack } from 'expo-router';
 import { SQLiteProvider } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
-import { cores } from '../tema';
+import { ScrollView, StyleSheet, Text } from 'react-native';
+import { EXPLICACAO, problemaNaWeb } from '../lib/suporteWeb';
+import { cores, espaco } from '../tema';
+
+// Calculado uma vez: o contexto da página não muda enquanto ela está aberta.
+const problema = problemaNaWeb();
 
 export default function Layout() {
+  if (problema) {
+    const { titulo, texto } = EXPLICACAO[problema];
+    return (
+      <ScrollView contentContainerStyle={estilos.aviso}>
+        <Text style={estilos.titulo}>🐉 {titulo}</Text>
+        <Text style={estilos.texto}>{texto}</Text>
+      </ScrollView>
+    );
+  }
+
   return (
     // Banco local: as compras ficam no aparelho. `migrar` cria/atualiza as tabelas antes das telas abrirem.
     <SQLiteProvider databaseName="dragometro.db" onInit={migrar}>
@@ -25,3 +40,15 @@ export default function Layout() {
     </SQLiteProvider>
   );
 }
+
+const estilos = StyleSheet.create({
+  aviso: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: espaco(4),
+    gap: espaco(2),
+    backgroundColor: cores.fundo,
+  },
+  titulo: { color: cores.dragao, fontSize: 22, fontWeight: '700' },
+  texto: { color: cores.texto, fontSize: 16, lineHeight: 24 },
+});
