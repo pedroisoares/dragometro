@@ -21,7 +21,8 @@ export function paraUnidadeBase(quantidade: number, unidade: Unidade): Embalagem
 
 /** Converte a unidade escrita no cupom ("UN", "KG", "LT", "PCT"...) para uma `Unidade`. */
 export function lerUnidadeCupom(texto: string): Unidade {
-  const t = texto.trim().toLowerCase();
+  // Alguns sistemas acrescentam números à unidade ("KG0001", "UN1"): fica só a parte em letras.
+  const t = (/^[a-z]+/.exec(texto.trim().toLowerCase())?.[0]) ?? '';
   if (['kg', 'kgs', 'quilo'].includes(t)) return 'kg';
   if (['g', 'gr', 'grs'].includes(t)) return 'g';
   if (['l', 'lt', 'lts', 'litro'].includes(t)) return 'l';

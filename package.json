@@ -12,6 +12,7 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "app": "pnpm --filter @dragometro/app start",
+    "web": "pnpm --filter @dragometro/app web",
     "api": "pnpm --filter @dragometro/api dev"
   },
   "devDependencies": {

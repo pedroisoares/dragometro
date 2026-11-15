@@ -56,15 +56,25 @@ export async function criarApp({ fetchFn = fetch, logger = false }: OpcoesApp = 
       const indice = req.params.indice.toUpperCase() as Indice;
       if (!INDICES.includes(indice)) return reply.code(404).send({ erro: 'Use IPCA ou INPC' });
       const ultimos = Math.min(Math.max(Number(req.query.ultimos ?? 12) || 12, 1), 120);
-      const serie = await variacaoMensal(indice, { ultimos }, fetchFn);
-      return { indice, serie: Object.fromEntries(serie) };
+      try {
+        const serie = await variacaoMensal(indice, { ultimos }, fetchFn);
+        return { indice, serie: Object.fromEntries(serie) };
+      } catch (e) {
+        req.log.warn(e);
+        return reply.code(502).send({ erro: 'Falha ao consultar o IBGE' });
+      }
     },
   );
 
   app.get<{ Params: { indice: string } }>('/indices/:indice/subitens', async (req, reply) => {
     const indice = req.params.indice.toUpperCase() as Indice;
     if (!INDICES.includes(indice)) return reply.code(404).send({ erro: 'Use IPCA ou INPC' });
-    return { indice, subitens: await subitens(indice, { ultimos: 1 }, fetchFn) };
+    try {
+      return { indice, subitens: await subitens(indice, { ultimos: 1 }, fetchFn) };
+    } catch (e) {
+      req.log.warn(e);
+      return reply.code(502).send({ erro: 'Falha ao consultar o IBGE' });
+    }
   });
 
   return app;

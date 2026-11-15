@@ -39,4 +39,13 @@ describe('API', () => {
     const r = await app.inject('/nfce?url=https%3A%2F%2Fsefaz.gov.br%2Fqrcode%3Fp%3D123');
     expect(r.statusCode).toBe(400);
   });
+
+  it('devolve 502 quando o IBGE não responde', async () => {
+    const falha = (async () => {
+      throw new Error('sem rede');
+    }) as typeof fetch;
+    const app = await criarApp({ fetchFn: falha });
+    const r = await app.inject('/indices/IPCA');
+    expect(r.statusCode).toBe(502);
+  });
 });

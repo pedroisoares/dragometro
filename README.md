@@ -22,15 +22,16 @@ A explicação completa das fórmulas está em [`docs/metodologia.md`](docs/meto
 
 - [x] Cálculo do índice (Jevons + Laspeyres modificado), com testes
 - [x] Leitura da chave de acesso e do QR Code da NFC-e
-- [x] Leitor da página da SEFAZ no layout mais comum (**ainda não validado com páginas reais**)
+- [x] Leitor da página da SEFAZ no layout mais comum, **validado com cupons reais de SP**
 - [x] Cliente da API SIDRA do IBGE (IPCA, INPC e subitens)
-- [x] App (iOS, Android e Web) com leitura do QR Code
+- [x] App (iOS, Android e Web) com leitura do QR Code (ou colando o link)
+- [x] Compras guardadas no aparelho (SQLite), com telas de cupons, produtos e variação de preço por semana/mês/ano
 - [x] API com ponte para a SEFAZ (para a Web) e índices do IBGE
 
 Próximos passos:
 
-- [ ] Validar o leitor com cupons reais de cada estado ([ajude com o seu!](CONTRIBUTING.md))
-- [ ] Guardar as compras no aparelho (SQLite)
+- [ ] Validar o leitor com cupons reais dos outros estados ([ajude com o seu!](CONTRIBUTING.md))
+- [ ] Confirmar que a consulta direta do celular passa pela proteção anti-robô do portal da SEFAZ-SP
 - [ ] Classificar produtos nos subitens do IPCA
 - [ ] Telas de evolução por produto e de comparação com o IPCA/INPC
 - [ ] Plano B por OCR para cupons sem QR Code legível
@@ -46,25 +47,31 @@ packages/
   core/      modelos, normalização de unidades e cálculo do índice
   sefaz/     chave de acesso, QR Code e leitores das páginas das SEFAZ
   ibge/      cliente da API SIDRA (IPCA, INPC, subitens)
+  armazenamento/  banco local SQLite (expo-sqlite no app, node:sqlite nos testes)
 docs/        metodologia e decisões
 ```
 
 Tudo é TypeScript. Os leitores da SEFAZ ficam num pacote próprio porque o mesmo código roda no celular e na API.
 
-## Rodando
+## Instalando e testando
 
-Requisitos: Node 22+ e pnpm 10+.
+O passo a passo completo, para quem vai usar e para quem vai contribuir, está em **[docs/instalacao.md](docs/instalacao.md)**.
+
+Resumo para quem já tem Node 22 e pnpm 10:
 
 ```bash
+git clone https://github.com/pedroisoares/dragometro.git
+cd dragometro
 pnpm install
-pnpm test          # testes de todos os pacotes
-pnpm typecheck     # checagem de tipos
 
-pnpm app           # inicia o app (Expo). Use o Expo Go no celular ou pressione "w" para Web
-pnpm api           # inicia a API em http://localhost:3333
+# Celular (Expo Go): um terminal
+pnpm app
+
+# Computador (navegador): dois terminais
+cp apps/app/.env.example apps/app/.env   # uma vez só
+pnpm api     # terminal 1
+pnpm web     # terminal 2 → http://localhost:8081
 ```
-
-Para a versão Web consultar a SEFAZ, copie `apps/app/.env.example` para `apps/app/.env` e deixe a API rodando.
 
 ## Contribuindo
 
@@ -75,7 +82,7 @@ Contribuições são muito bem-vindas, principalmente **leitores das SEFAZ de ou
 Cupons fiscais mostram onde, quando e o que você compra. Por isso o Dragômetro foi pensado para:
 
 - consultar a SEFAZ a partir do próprio aparelho sempre que possível;
-- guardar os dados no aparelho, com sincronização opcional;
+- guardar os dados no aparelho (SQLite). Um ano de compras, com 2 cupons por semana, ocupa cerca de 450 KB;
 - permitir que qualquer pessoa rode a própria instância da API.
 
 Nunca inclua cupons com CPF ou dados pessoais em issues, PRs ou arquivos de teste.

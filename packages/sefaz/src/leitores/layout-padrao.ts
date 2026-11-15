@@ -8,13 +8,14 @@ import type { ChaveAcesso, ItemNota, LeitorSefaz, NotaFiscal } from '../tipos';
  * `txtTit` (descrição), `RCod` (código), `Rqtd` (quantidade), `RUN` (unidade),
  * `RvlUnit` (valor unitário) e `valor` (valor total do item).
  *
- * ⚠️ Ainda não validado com páginas reais. Quem tiver cupons do seu estado:
- * salve a página em `test/fixtures/<uf>.html` e abra um PR (veja CONTRIBUTING.md).
+ * Validado com páginas reais de: SP (test/fixtures/sp-*.html).
+ * Quem tiver cupons de outro estado: salve a página em `test/fixtures/<uf>.html`
+ * e abra um PR (veja CONTRIBUTING.md).
  */
 export const layoutPadrao: LeitorSefaz = {
   nome: 'layout-padrao',
   // Estados já validados com páginas reais. Adicione o seu junto com a fixture e o teste.
-  ufs: [],
+  ufs: ['SP'],
   ler(html: string, chave: ChaveAcesso): NotaFiscal {
     const doc = parse(html);
     const texto = (seletor: string, raiz = doc) => raiz.querySelector(seletor)?.text.trim() ?? '';

@@ -4,6 +4,7 @@ import {
   compararComOficial,
   extrairEmbalagem,
   indicePessoal,
+  lerUnidadeCupom,
   mediaGeometrica,
   pesosPorGasto,
   precoPorUnidadeBase,
@@ -111,6 +112,12 @@ describe('unidades', () => {
     expect(extrairEmbalagem('REFRIG COLA 2,5L')).toEqual({ quantidade: 2.5, unidade: 'l' });
     expect(extrairEmbalagem('AGUA MINERAL 6X1,5L')).toEqual({ quantidade: 9, unidade: 'l' });
     expect(extrairEmbalagem('PAO FRANCES')).toBeUndefined();
+  });
+
+  it('entende unidades com sufixo numérico, como vêm de alguns caixas ("KG0001")', () => {
+    expect(lerUnidadeCupom('KG0001')).toBe('kg');
+    expect(lerUnidadeCupom('UN')).toBe('un');
+    expect(lerUnidadeCupom('LT')).toBe('l');
   });
 
   it('calcula o preço por kg/L para comparar embalagens diferentes', () => {

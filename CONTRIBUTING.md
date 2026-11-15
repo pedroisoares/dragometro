@@ -14,7 +14,7 @@ Abra um PR pequeno e focado. Escreva os testes junto com o código. Os textos do
 
 ## A contribuição mais valiosa: o leitor da SEFAZ do seu estado
 
-Cada estado tem a própria página de consulta da NFC-e. Hoje existe um leitor genérico (`packages/sefaz/src/leitores/layout-padrao.ts`), mas ele **ainda não foi validado com páginas reais**.
+Cada estado tem a própria página de consulta da NFC-e. Hoje existe um leitor genérico (`packages/sefaz/src/leitores/layout-padrao.ts`), já **validado com cupons reais de SP**. Os outros estados podem usar o mesmo layout ou não; só testando para saber.
 
 ### 1. Salve uma página real
 
