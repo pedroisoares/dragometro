@@ -1,20 +1,17 @@
-import { formatarPercentual, variacaoDoItem, type ObservacaoPreco } from '@dragometro/core';
-import { Link } from 'expo-router';
+import { listarNotas } from '@dragometro/armazenamento';
+import { formatarPercentual } from '@dragometro/core';
+import { Link, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { reais } from '../lib/formato';
 import { buscarIndice } from '../lib/indices';
+import { useDados } from '../lib/useDados';
 import { cores, espaco } from '../tema';
-
-// Exemplo fixo enquanto o armazenamento local não existe: o leite de caixinha.
-const EXEMPLO: ObservacaoPreco[] = [
-  { produtoId: 'leite', data: '2026-11-02', preco: 5.69 },
-  { produtoId: 'leite', data: '2026-11-09', preco: 3.79 },
-  { produtoId: 'leite', data: '2026-11-16', preco: 4.8 },
-];
 
 export default function Inicio() {
   const [ipca, setIpca] = useState<{ mes: string; valor: number } | null>(null);
   const [erroIpca, setErroIpca] = useState(false);
+  const { dados: notas } = useDados(listarNotas);
 
   useEffect(() => {
     buscarIndice('IPCA', 1)
@@ -25,8 +22,8 @@ export default function Inicio() {
       .catch(() => setErroIpca(true));
   }, []);
 
-  const semanas = variacaoDoItem(EXEMPLO, 'leite', 'semana');
-  const ultima = semanas.at(-1);
+  const totalGasto = notas?.reduce((s, n) => s + (n.valorTotal ?? 0), 0) ?? 0;
+  const totalItens = notas?.reduce((s, n) => s + n.quantidadeItens, 0) ?? 0;
 
   return (
     <ScrollView contentContainerStyle={estilos.tela}>
@@ -42,6 +39,28 @@ export default function Inicio() {
       </Link>
 
       <View style={estilos.cartao}>
+        <Text style={estilos.cartaoTitulo}>Suas compras</Text>
+        {notas && notas.length > 0 ? (
+          <>
+            <Text style={estilos.numero}>
+              {notas.length} {notas.length === 1 ? 'cupom' : 'cupons'}
+            </Text>
+            <Text style={estilos.suave}>
+              {totalItens} itens · {reais(totalGasto)}
+            </Text>
+            <View style={estilos.atalhos}>
+              <Atalho href="/compras" texto="Ver cupons" />
+              <Atalho href="/produtos" texto="Ver produtos" />
+            </View>
+          </>
+        ) : (
+          <Text style={estilos.suave}>
+            {notas ? 'Nenhum cupom ainda. Leia o primeiro para começar a medir o seu dragão.' : 'Carregando...'}
+          </Text>
+        )}
+      </View>
+
+      <View style={estilos.cartao}>
         <Text style={estilos.cartaoTitulo}>IPCA oficial (IBGE)</Text>
         {ipca ? (
           <Text style={estilos.numero}>
@@ -52,30 +71,19 @@ export default function Inicio() {
         )}
       </View>
 
-      <View style={estilos.cartao}>
-        <Text style={estilos.cartaoTitulo}>Exemplo: leite de caixinha (1 L)</Text>
-        {semanas.map((s) => (
-          <View key={s.periodo} style={estilos.linha}>
-            <Text style={estilos.texto}>{s.periodo}</Text>
-            <Text style={estilos.texto}>R$ {s.preco.toFixed(2).replace('.', ',')}</Text>
-            <Text style={[estilos.texto, corDaVariacao(s.variacao)]}>
-              {s.variacao === undefined ? '—' : formatarPercentual(s.variacao)}
-            </Text>
-          </View>
-        ))}
-        {ultima && (
-          <Text style={[estilos.suave, { marginTop: espaco(1) }]}>
-            Acumulado desde a primeira compra: {formatarPercentual(ultima.acumulado)}
-          </Text>
-        )}
-      </View>
+      <Text style={estilos.rodape}>Seus cupons ficam guardados só neste aparelho.</Text>
     </ScrollView>
   );
 }
 
-function corDaVariacao(v?: number) {
-  if (v === undefined || v === 0) return null;
-  return { color: v > 0 ? cores.vermelho : cores.verde };
+function Atalho({ href, texto }: { href: Href; texto: string }) {
+  return (
+    <Link href={href} asChild>
+      <Pressable style={estilos.atalho}>
+        <Text style={{ color: cores.texto }}>{texto}</Text>
+      </Pressable>
+    </Link>
+  );
 }
 
 const estilos = StyleSheet.create({
@@ -87,7 +95,8 @@ const estilos = StyleSheet.create({
   cartao: { backgroundColor: cores.cartao, borderRadius: 12, padding: espaco(2), gap: espaco(1) },
   cartaoTitulo: { color: cores.texto, fontWeight: '600', fontSize: 16 },
   numero: { color: cores.texto, fontSize: 24, fontWeight: '700' },
-  linha: { flexDirection: 'row', justifyContent: 'space-between' },
-  texto: { color: cores.texto, fontVariant: ['tabular-nums'] },
   suave: { color: cores.textoSuave, fontSize: 14 },
+  atalhos: { flexDirection: 'row', gap: espaco(1), marginTop: espaco(1) },
+  atalho: { flex: 1, borderColor: cores.textoSuave, borderWidth: 1, borderRadius: 10, padding: espaco(1.25), alignItems: 'center' },
+  rodape: { color: cores.textoSuave, fontSize: 12, textAlign: 'center' },
 });

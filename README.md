@@ -24,14 +24,14 @@ A explicação completa das fórmulas está em [`docs/metodologia.md`](docs/meto
 - [x] Leitura da chave de acesso e do QR Code da NFC-e
 - [x] Leitor da página da SEFAZ no layout mais comum, **validado com cupons reais de SP**
 - [x] Cliente da API SIDRA do IBGE (IPCA, INPC e subitens)
-- [x] App (iOS, Android e Web) com leitura do QR Code
+- [x] App (iOS, Android e Web) com leitura do QR Code (ou colando o link)
+- [x] Compras guardadas no aparelho (SQLite), com telas de cupons, produtos e variação de preço por semana/mês/ano
 - [x] API com ponte para a SEFAZ (para a Web) e índices do IBGE
 
 Próximos passos:
 
 - [ ] Validar o leitor com cupons reais dos outros estados ([ajude com o seu!](CONTRIBUTING.md))
 - [ ] Confirmar que a consulta direta do celular passa pela proteção anti-robô do portal da SEFAZ-SP
-- [ ] Guardar as compras no aparelho (SQLite)
 - [ ] Classificar produtos nos subitens do IPCA
 - [ ] Telas de evolução por produto e de comparação com o IPCA/INPC
 - [ ] Plano B por OCR para cupons sem QR Code legível
@@ -47,6 +47,7 @@ packages/
   core/      modelos, normalização de unidades e cálculo do índice
   sefaz/     chave de acesso, QR Code e leitores das páginas das SEFAZ
   ibge/      cliente da API SIDRA (IPCA, INPC, subitens)
+  armazenamento/  banco local SQLite (expo-sqlite no app, node:sqlite nos testes)
 docs/        metodologia e decisões
 ```
 
@@ -76,7 +77,7 @@ Contribuições são muito bem-vindas, principalmente **leitores das SEFAZ de ou
 Cupons fiscais mostram onde, quando e o que você compra. Por isso o Dragômetro foi pensado para:
 
 - consultar a SEFAZ a partir do próprio aparelho sempre que possível;
-- guardar os dados no aparelho, com sincronização opcional;
+- guardar os dados no aparelho (SQLite). Um ano de compras, com 2 cupons por semana, ocupa cerca de 450 KB;
 - permitir que qualquer pessoa rode a própria instância da API.
 
 Nunca inclua cupons com CPF ou dados pessoais em issues, PRs ou arquivos de teste.
