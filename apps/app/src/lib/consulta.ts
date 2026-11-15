@@ -1,4 +1,4 @@
-import { consultarNota, ErroSemItens, type NotaFiscal } from '@dragometro/sefaz';
+import { consultarNota, type NotaFiscal } from '@dragometro/sefaz';
 import { Platform } from 'react-native';
 
 /** Endereço da API do Dragômetro (apps/api). Configure em `.env`: EXPO_PUBLIC_API_URL=http://localhost:3333 */
@@ -19,10 +19,11 @@ export type ResultadoBusca =
 export async function buscarNota(conteudoQr: string): Promise<ResultadoBusca> {
   if (Platform.OS !== 'web') {
     try {
-      return { tipo: 'nota', nota: await consultarNota(conteudoQr) };
-    } catch (e) {
-      if (e instanceof ErroSemItens) return { tipo: 'usar-navegador' };
-      throw e;
+      return { tipo: 'nota', nota: await consultarNota(conteudoQr, fetchComLimite(10_000)) };
+    } catch {
+      // Página de verificação (sem itens), demora, bloqueio ou erro de rede:
+      // em todos os casos o WebView, que se comporta como um navegador, tem mais chance.
+      return { tipo: 'usar-navegador' };
     }
   }
 
@@ -35,4 +36,17 @@ export async function buscarNota(conteudoQr: string): Promise<ResultadoBusca> {
     throw new Error(corpo?.erro ?? `A API respondeu ${resposta.status}`);
   }
   return { tipo: 'nota', nota: (await resposta.json()) as NotaFiscal };
+}
+
+/** `fetch` que desiste depois de `ms` milissegundos (o portal pode segurar a conexão). */
+function fetchComLimite(ms: number): typeof fetch {
+  return (async (url: RequestInfo | URL, init?: RequestInit) => {
+    const controle = new AbortController();
+    const timer = setTimeout(() => controle.abort(), ms);
+    try {
+      return await fetch(url, { ...init, signal: controle.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }) as typeof fetch;
 }
