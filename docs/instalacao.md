@@ -164,6 +164,29 @@ Os cupons ficam guardados **no celular**.
 
 > **Atenção:** este QR Code do terminal é o do **app**, e o do rodapé do cupom é o da **nota fiscal**. Não confunda os dois. 🙂
 
+### O QR Code mostra o endereço errado?
+
+Se o computador tem mais de uma rede (cabo e Wi-Fi, VPN, máquina virtual, Docker...), o Expo pode escolher o endereço errado para o QR Code. Descubra o endereço certo do computador:
+
+- **Windows:** rode `ipconfig` e procure o "Endereço IPv4" da rede em que o celular também está.
+- **Mac:** Ajustes do Sistema → Rede. **Linux:** `hostname -I`.
+
+Depois informe esse endereço ao Expo antes de rodar o app (troque `172.16.3.152` pelo seu):
+
+- **Windows (PowerShell):**
+
+  ```powershell
+  $env:REACT_NATIVE_PACKAGER_HOSTNAME="172.16.3.152"; pnpm app
+  ```
+
+- **Mac/Linux:**
+
+  ```bash
+  REACT_NATIVE_PACKAGER_HOSTNAME=172.16.3.152 pnpm app
+  ```
+
+O QR Code passa a usar o endereço informado. No Windows, se o celular ainda não conectar, libere o Node.js no Firewall do Windows para redes privadas. A primeira vez que o Expo roda, o Windows costuma perguntar. Se você negou, ajuste em "Permitir um aplicativo pelo Firewall".
+
 ### Não conectou?
 
 Se o celular não estiver na mesma rede, ou se a rede bloquear a conexão (comum em redes de empresa), use o modo túnel:
@@ -210,5 +233,5 @@ Os dois precisam passar. Depois leia o [CONTRIBUTING.md](../CONTRIBUTING.md). A 
 | Na Web: "Na versão Web é preciso configurar EXPO_PUBLIC_API_URL" | Falta o arquivo `apps/app/.env` ([passo 1 da Web](#1-configure-o-endereço-da-api-uma-vez-só)). Depois de criar, pare o `pnpm web` (Ctrl+C) e rode de novo. |
 | Na Web: "A API respondeu..." ou erro ao ler o cupom | Confira se o `pnpm api` está rodando no outro terminal. |
 | "Não foi possível buscar o IPCA agora" | O site do IBGE não respondeu. Tente mais tarde. Não afeta a leitura dos cupons. |
-| O celular não abre o app | Mesma rede Wi-Fi? Se sim, tente o [modo túnel](#não-conectou). |
+| O celular não abre o app | Mesma rede Wi-Fi? Confira se o [endereço do QR Code](#o-qr-code-mostra-o-endereço-errado) é o do seu computador. Se nada resolver, tente o [modo túnel](#não-conectou). |
 | "SEFAZ respondeu..." ou "Nenhum item encontrado" | Pode ser o portal da SEFAZ do seu estado fora do ar ou com outro formato de página. [Abra uma issue](https://github.com/pedroisoares/dragometro/issues) contando o estado. Não cole o link do cupom na issue: ele dá acesso aos seus dados. |
