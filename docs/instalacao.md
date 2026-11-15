@@ -211,4 +211,6 @@ Os dois precisam passar. Depois leia o [CONTRIBUTING.md](../CONTRIBUTING.md). A 
 | Na Web: "A API respondeu..." ou erro ao ler o cupom | Confira se o `pnpm api` está rodando no outro terminal. |
 | "Não foi possível buscar o IPCA agora" | O site do IBGE não respondeu. Tente mais tarde. Não afeta a leitura dos cupons. |
 | O celular não abre o app | Mesma rede Wi-Fi? Se sim, tente o [modo túnel](#não-conectou). |
+| No Expo Go: "Failed to download remote update" | O celular não está alcançando o computador. Com o `pnpm app` rodando, abra no **navegador do celular** `http://IP-DO-COMPUTADOR:8081`. Se abrir alguma coisa, esse IP funciona: use-o no QR Code. Se não abrir, libere o Node.js no Firewall e confira se a rede do Windows está como **Privada**. |
+| No navegador do celular: "Abra pelo endereço localhost" | Normal: a versão Web só guarda dados em `localhost` ou `https`. Isso mostra que o celular **alcança** o computador; para usar no celular, abra pelo Expo Go. |
 | "SEFAZ respondeu..." ou "Nenhum item encontrado" | Pode ser o portal da SEFAZ do seu estado fora do ar ou com outro formato de página. [Abra uma issue](https://github.com/pedroisoares/dragometro/issues) contando o estado. Não cole o link do cupom na issue: ele dá acesso aos seus dados. |
