@@ -5,6 +5,7 @@ import {
   chaveDoQrCode,
   chaveValida,
   consultarNota,
+  ErroSemItens,
   lerChave,
   lerDataHoraBR,
   lerNotaDaPagina,
@@ -81,6 +82,12 @@ describe('leitor do layout padrão', () => {
         valorTotal: 8.63,
       },
     ]);
+  });
+
+  it('avisa com o título quando a página não tem itens (ex.: verificação anti-robô)', () => {
+    const html = '<html><head><title>Verificação de segurança</title></head><body>aguarde...</body></html>';
+    expect(() => lerNotaDaPagina(html, CHAVE)).toThrow(ErroSemItens);
+    expect(() => lerNotaDaPagina(html, CHAVE)).toThrow('("Verificação de segurança")');
   });
 
   it('consulta pelo endereço do QR Code usando o fetch informado', async () => {

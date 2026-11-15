@@ -1,5 +1,5 @@
 import type { LeitorSefaz, UF } from '../tipos';
-import { layoutPadrao } from './layout-padrao';
+import { ErroSemItens, layoutPadrao } from './layout-padrao';
 
 /**
  * Leitores específicos por estado. Enquanto um estado não tiver o seu,
@@ -21,4 +21,4 @@ export function estadoValidado(uf: UF): boolean {
   return [layoutPadrao, ...leitoresEspecificos].some((l) => l.ufs.includes(uf));
 }
 
-export { layoutPadrao };
+export { ErroSemItens, layoutPadrao };

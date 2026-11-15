@@ -31,7 +31,7 @@ A explicação completa das fórmulas está em [`docs/metodologia.md`](docs/meto
 Próximos passos:
 
 - [ ] Validar o leitor com cupons reais dos outros estados ([ajude com o seu!](CONTRIBUTING.md))
-- [ ] Confirmar que a consulta direta do celular passa pela proteção anti-robô do portal da SEFAZ-SP
+- [ ] Confirmar em celulares reais o plano B por WebView para a proteção anti-robô do portal da SEFAZ-SP
 - [ ] Classificar produtos nos subitens do IPCA
 - [ ] Telas de evolução por produto e de comparação com o IPCA/INPC
 - [ ] Plano B por OCR para cupons sem QR Code legível
