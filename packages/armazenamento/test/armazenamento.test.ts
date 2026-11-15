@@ -78,6 +78,7 @@ describe('produtos', () => {
     const frango = produtos.find((p) => p.descricao === 'FILE FRANGO KG')!;
     expect(frango.produtoId).toBe('50234608000159:122');
     expect(frango.compras).toBe(1);
+    expect(frango.linhas).toBe(7);
     expect(frango.gastoTotal).toBe(151.29);
 
     const itens = await itensComprados(db, frango.produtoId);

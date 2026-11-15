@@ -119,6 +119,8 @@ export interface ResumoProduto {
   nomeEmitente: string | null;
   /** Em quantas notas o produto aparece. */
   compras: number;
+  /** Quantas linhas de cupom o produto ocupa (ex.: 7 pesagens de frango num só cupom). */
+  linhas: number;
   gastoTotal: number;
   ultimaCompra: string;
 }
@@ -127,7 +129,7 @@ export interface ResumoProduto {
 export async function listarProdutos(db: BancoSQL): Promise<ResumoProduto[]> {
   return db.getAllAsync<ResumoProduto>(
     `SELECT i.produto_id AS produtoId, MAX(i.descricao) AS descricao, MAX(n.nome_emitente) AS nomeEmitente,
-            COUNT(DISTINCT i.chave_nota) AS compras, ROUND(SUM(i.valor_total), 2) AS gastoTotal,
+            COUNT(DISTINCT i.chave_nota) AS compras, COUNT(*) AS linhas, ROUND(SUM(i.valor_total), 2) AS gastoTotal,
             MAX(n.data_emissao) AS ultimaCompra
        FROM itens i JOIN notas n ON n.chave = i.chave_nota
       GROUP BY i.produto_id

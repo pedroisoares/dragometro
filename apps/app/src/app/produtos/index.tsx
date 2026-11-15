@@ -26,6 +26,7 @@ export default function Produtos() {
               <Text style={estilos.titulo}>{item.descricao}</Text>
               <Text style={estilos.suave}>
                 {item.nomeEmitente ?? ''} · {item.compras} {item.compras === 1 ? 'compra' : 'compras'}
+                {item.linhas > item.compras ? ` · ${item.linhas} itens nos cupons` : ''}
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>

@@ -22,10 +22,13 @@ export default function LerCupom() {
   const [estado, setEstado] = useState<Estado>({ tipo: 'lendo' });
   const [link, setLink] = useState('');
   const processando = useRef(false);
+  // Cada leitura ganha um número; respostas de leituras canceladas são ignoradas.
+  const consultaAtual = useRef(0);
 
   async function processar(conteudoQr: string) {
     if (processando.current) return;
     processando.current = true;
+    const id = ++consultaAtual.current;
     try {
       const chave = chaveDoQrCode(conteudoQr);
       setEstado({ tipo: 'consultando', chave: chave.chave });
@@ -35,30 +38,33 @@ export default function LerCupom() {
         setEstado({ tipo: 'consultando', chave: chave.chave, viaNavegador: conteudoQr });
         return;
       }
-      await concluir(busca.nota);
+      await concluir(busca.nota, id);
     } catch (e) {
-      falhar(e);
+      falhar(e, id);
     }
   }
 
-  async function concluir(nota: NotaFiscal) {
+  async function concluir(nota: NotaFiscal, id: number) {
+    if (id !== consultaAtual.current) return; // consulta cancelada
     const resultado = await salvarNota(db, nota);
     setEstado({ tipo: 'pronto', nota, resultado });
   }
 
-  function falhar(e: unknown) {
+  function falhar(e: unknown, id: number) {
+    if (id !== consultaAtual.current) return; // consulta cancelada
     setEstado({ tipo: 'erro', mensagem: e instanceof Error ? e.message : String(e) });
   }
 
-  async function aoReceberHtml(html: string, conteudoQr: string) {
+  async function aoReceberHtml(html: string, conteudoQr: string, id: number) {
     try {
-      await concluir(lerNotaDaPagina(html, conteudoQr));
+      await concluir(lerNotaDaPagina(html, conteudoQr), id);
     } catch (e) {
-      falhar(e);
+      falhar(e, id);
     }
   }
 
   function lerOutro() {
+    consultaAtual.current++;
     processando.current = false;
     setLink('');
     setEstado({ tipo: 'lendo' });
@@ -75,10 +81,13 @@ export default function LerCupom() {
         {estado.viaNavegador && (
           <PaginaSefazOculta
             url={estado.viaNavegador}
-            aoReceberHtml={(html) => aoReceberHtml(html, estado.viaNavegador!)}
-            aoFalhar={falhar}
+            aoReceberHtml={(html) => aoReceberHtml(html, estado.viaNavegador!, consultaAtual.current)}
+            aoFalhar={(e) => falhar(e, consultaAtual.current)}
           />
         )}
+        <Pressable style={estilos.botaoSecundario} onPress={lerOutro}>
+          <Text style={estilos.texto}>Cancelar</Text>
+        </Pressable>
       </View>
     );
   }
@@ -109,6 +118,7 @@ export default function LerCupom() {
             <Text style={estilos.titulo}>{nota.emitente.nome ?? nota.emitente.cnpj}</Text>
             <Text style={estilos.suave}>
               {nota.dataEmissao ? dataCurta(nota.dataEmissao) : ''} · {nota.itens.length} itens
+              {produtosDistintos(nota) < nota.itens.length ? ` (${produtosDistintos(nota)} produtos)` : ''}
               {nota.valorTotal !== undefined ? ` · ${reais(nota.valorTotal)}` : ''}
             </Text>
           </View>
@@ -210,3 +220,8 @@ const estilos = StyleSheet.create({
   botaoSecundario: { borderColor: cores.textoSuave, borderWidth: 1, borderRadius: 12, padding: espaco(2), alignItems: 'center' },
   botaoTexto: { color: cores.fundo, fontWeight: '700', fontSize: 16 },
 });
+
+/** Produtos diferentes no cupom: a mesma carne pesada várias vezes conta uma vez. */
+function produtosDistintos(nota: NotaFiscal): number {
+  return new Set(nota.itens.map((i) => i.codigo ?? i.descricao)).size;
+}
