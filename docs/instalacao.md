@@ -162,6 +162,10 @@ Toque em **Ler QR Code do cupom**, permita o uso da câmera e aponte para o QR C
 
 Os cupons ficam guardados **no celular**.
 
+> **Android:** use o leitor **de dentro do Expo Go**. A câmera comum do Android e o Google Lens não sabem abrir esse QR Code e mostram "Não há aplicativos no seu celular que possam usar as informações desse QR Code".
+>
+> **Plano B:** no Expo Go, toque em **Enter URL manually** e digite o endereço que aparece no terminal logo acima do QR Code, por exemplo `exp://172.16.3.152:8081`.
+
 > **Atenção:** este QR Code do terminal é o do **app**, e o do rodapé do cupom é o da **nota fiscal**. Não confunda os dois. 🙂
 
 ### O QR Code mostra o endereço errado?
@@ -233,5 +237,6 @@ Os dois precisam passar. Depois leia o [CONTRIBUTING.md](../CONTRIBUTING.md). A 
 | Na Web: "Na versão Web é preciso configurar EXPO_PUBLIC_API_URL" | Falta o arquivo `apps/app/.env` ([passo 1 da Web](#1-configure-o-endereço-da-api-uma-vez-só)). Depois de criar, pare o `pnpm web` (Ctrl+C) e rode de novo. |
 | Na Web: "A API respondeu..." ou erro ao ler o cupom | Confira se o `pnpm api` está rodando no outro terminal. |
 | "Não foi possível buscar o IPCA agora" | O site do IBGE não respondeu. Tente mais tarde. Não afeta a leitura dos cupons. |
+| "Não há aplicativos no seu celular que possam usar as informações desse QR Code" | O Expo Go não está instalado, ou (Android) o QR foi lido pela câmera comum. Abra o **Expo Go** e use o leitor dele, ou digite o endereço `exp://...` em **Enter URL manually**. |
 | O celular não abre o app | Mesma rede Wi-Fi? Confira se o [endereço do QR Code](#o-qr-code-mostra-o-endereço-errado) é o do seu computador. Se nada resolver, tente o [modo túnel](#não-conectou). |
 | "SEFAZ respondeu..." ou "Nenhum item encontrado" | Pode ser o portal da SEFAZ do seu estado fora do ar ou com outro formato de página. [Abra uma issue](https://github.com/pedroisoares/dragometro/issues) contando o estado. Não cole o link do cupom na issue: ele dá acesso aos seus dados. |
