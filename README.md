@@ -26,14 +26,13 @@ A explicação completa das fórmulas está em [`docs/metodologia.md`](docs/meto
 - [x] Cliente da API SIDRA do IBGE (IPCA, INPC e subitens)
 - [x] App (iOS, Android e Web) com leitura do QR Code (ou colando o link)
 - [x] Compras guardadas no aparelho (SQLite), com telas de cupons, produtos e variação de preço por semana/mês/ano
+- [x] Produtos classificados nos subitens do IPCA, comparação de cada produto com o IPCA e tela "Minha inflação" (índice pessoal x IPCA e gastos por categoria)
 - [x] API com ponte para a SEFAZ (para a Web) e índices do IBGE
 
 Próximos passos:
 
 - [ ] Validar o leitor com cupons reais dos outros estados ([ajude com o seu!](CONTRIBUTING.md))
 - [ ] Confirmar em celulares reais o plano B por WebView para a proteção anti-robô do portal da SEFAZ-SP
-- [ ] Classificar produtos nos subitens do IPCA
-- [ ] Telas de evolução por produto e de comparação com o IPCA/INPC
 - [ ] Plano B por OCR para cupons sem QR Code legível
 - [ ] Bot no Telegram para enviar a foto do cupom
 
@@ -47,6 +46,7 @@ packages/
   core/      modelos, normalização de unidades e cálculo do índice
   sefaz/     chave de acesso, QR Code e leitores das páginas das SEFAZ
   ibge/      cliente da API SIDRA (IPCA, INPC, subitens)
+  classificacao/  encaixa itens do cupom nos subitens do IPCA
   armazenamento/  banco local SQLite (expo-sqlite no app, node:sqlite nos testes)
 docs/        metodologia e decisões
 ```

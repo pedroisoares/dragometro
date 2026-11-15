@@ -1,5 +1,5 @@
 import cors from '@fastify/cors';
-import { variacaoMensal, subitens, type Indice } from '@dragometro/ibge';
+import { subitens, variacaoMensal, variacaoMensalCategoria, type Indice } from '@dragometro/ibge';
 import { chaveDoQrCode, consultarNota } from '@dragometro/sefaz';
 import Fastify, { type FastifyInstance } from 'fastify';
 
@@ -59,6 +59,23 @@ export async function criarApp({ fetchFn = fetch, logger = false }: OpcoesApp = 
       try {
         const serie = await variacaoMensal(indice, { ultimos }, fetchFn);
         return { indice, serie: Object.fromEntries(serie) };
+      } catch (e) {
+        req.log.warn(e);
+        return reply.code(502).send({ erro: 'Falha ao consultar o IBGE' });
+      }
+    },
+  );
+
+  app.get<{ Params: { indice: string; sidra: string }; Querystring: { ultimos?: string } }>(
+    '/indices/:indice/categoria/:sidra',
+    async (req, reply) => {
+      const indice = req.params.indice.toUpperCase() as Indice;
+      if (!INDICES.includes(indice)) return reply.code(404).send({ erro: 'Use IPCA ou INPC' });
+      if (!/^\d{1,7}$/.test(req.params.sidra)) return reply.code(400).send({ erro: 'Código SIDRA inválido' });
+      const ultimos = Math.min(Math.max(Number(req.query.ultimos ?? 12) || 12, 1), 120);
+      try {
+        const serie = await variacaoMensalCategoria(indice, req.params.sidra, { ultimos }, fetchFn);
+        return { indice, sidra: req.params.sidra, serie: Object.fromEntries(serie) };
       } catch (e) {
         req.log.warn(e);
         return reply.code(502).send({ erro: 'Falha ao consultar o IBGE' });

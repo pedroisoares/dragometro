@@ -49,8 +49,9 @@ export default function Inicio() {
               {totalItens} itens · {reais(totalGasto)}
             </Text>
             <View style={estilos.atalhos}>
-              <Atalho href="/compras" texto="Ver cupons" />
-              <Atalho href="/produtos" texto="Ver produtos" />
+              <Atalho href="/compras" texto="Cupons" />
+              <Atalho href="/produtos" texto="Produtos" />
+              <Atalho href="/inflacao" texto="Minha inflação" />
             </View>
           </>
         ) : (

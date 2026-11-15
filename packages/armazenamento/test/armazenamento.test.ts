@@ -3,7 +3,9 @@ import { observacoesDeItens, variacaoDoItem } from '@dragometro/core';
 import { lerNotaDaPagina, type NotaFiscal } from '@dragometro/sefaz';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  ESQUEMA_V1,
   excluirNota,
+  gastosPorCategoria,
   idProduto,
   itensComprados,
   listarNotas,
@@ -30,7 +32,21 @@ describe('migrações', () => {
   it('cria o esquema e pode rodar de novo sem erro', async () => {
     await migrar(db);
     const v = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version', []);
-    expect(v?.user_version).toBe(1);
+    expect(v?.user_version).toBe(2);
+  });
+
+  it('atualiza um banco da versão 1 classificando os itens já guardados', async () => {
+    const antigo = bancoEmMemoria();
+    await antigo.execAsync(ESQUEMA_V1 + 'PRAGMA user_version = 1;');
+    await antigo.runAsync(`INSERT INTO notas VALUES ('k', 'SP', '1', 'Loja', '2026-11-01', 10, '2026-11-01')`, []);
+    await antigo.runAsync(
+      `INSERT INTO itens (chave_nota, ordem, produto_id, codigo, descricao, quantidade, unidade, valor_unitario, valor_total)
+       VALUES ('k', 1, '1:97', '97', 'PATINHO KG', 1, 'KG', 10, 10)`,
+      [],
+    );
+    await migrar(antigo);
+    const [item] = await itensComprados(antigo);
+    expect(item!.categoria).toBe('1107089');
   });
 });
 
@@ -103,5 +119,25 @@ describe('produtos', () => {
     // 1ª semana: média geométrica das duas pesagens (54,903148 e 54,906103)
     expect(serie[0]!.preco).toBeCloseTo(54.9046, 3);
     expect(serie[1]!.variacao).toBeCloseTo(59.9 / 54.9046 - 1, 4);
+  });
+});
+
+describe('categorias do IPCA', () => {
+  it('classifica ao salvar e soma os gastos por subitem', async () => {
+    await salvarNota(db, supermercado);
+    await salvarNota(db, acougue);
+
+    const produtos = await listarProdutos(db);
+    expect(produtos.find((p) => p.descricao === 'PATINHO KG')!.subitem).toBe('1107089');
+    expect(produtos.find((p) => p.descricao.startsWith('BAT PALHA'))!.subitem).toBeNull();
+
+    const gastos = await gastosPorCategoria(db);
+    const frango = gastos.find((g) => g.subitem === '1110010')!;
+    expect(frango.gasto).toBe(151.29);
+    expect(frango.itens).toBe(7);
+    // 552,92 + 391,13 no total, com ou sem categoria
+    expect(Math.round(gastos.reduce((s, g) => s + g.gasto, 0) * 100) / 100).toBe(944.05);
+    // Sem categoria: batata palha e creme de leite
+    expect(gastos.find((g) => g.subitem === null)!.itens).toBe(2);
   });
 });

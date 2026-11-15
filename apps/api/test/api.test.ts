@@ -48,4 +48,22 @@ describe('API', () => {
     const r = await app.inject('/indices/IPCA');
     expect(r.statusCode).toBe(502);
   });
+
+  it('repassa a série de uma categoria do IBGE', async () => {
+    const corpo = JSON.stringify([
+      { D3C: 'Mês (Código)', V: 'Valor' },
+      { D2C: '63', D3C: '202610', D4C: '12393', V: '-0.67' },
+    ]);
+    const urls: string[] = [];
+    const fetchFn = (async (url: string) => {
+      urls.push(String(url));
+      return new Response(corpo, { status: 200 });
+    }) as unknown as typeof fetch;
+    const app = await criarApp({ fetchFn });
+    const r = await app.inject('/indices/IPCA/categoria/12393?ultimos=1');
+    expect(r.statusCode).toBe(200);
+    expect(r.json().serie['2026-10']).toBeCloseTo(-0.0067, 10);
+    expect(urls[0]).toContain('/c315/12393');
+    expect((await app.inject('/indices/IPCA/categoria/abc')).statusCode).toBe(400);
+  });
 });

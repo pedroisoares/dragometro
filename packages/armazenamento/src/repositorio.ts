@@ -1,3 +1,4 @@
+import { classificar } from '@dragometro/classificacao';
 import { lerUnidadeCupom, type ItemComprado } from '@dragometro/core';
 import { lerChave, type ItemNota, type NotaFiscal } from '@dragometro/sefaz';
 import type { BancoSQL } from './banco';
@@ -35,8 +36,8 @@ export async function salvarNota(
     resultado = 'nova';
     for (const [ordem, item] of nota.itens.entries()) {
       await db.runAsync(
-        `INSERT INTO itens (chave_nota, ordem, produto_id, codigo, descricao, quantidade, unidade, valor_unitario, valor_total)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO itens (chave_nota, ordem, produto_id, codigo, descricao, quantidade, unidade, valor_unitario, valor_total, subitem)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           nota.chave,
           ordem + 1,
@@ -47,6 +48,7 @@ export async function salvarNota(
           item.unidade,
           item.valorUnitario,
           item.valorTotal,
+          classificar(item.descricao)?.codigo ?? null,
         ],
       );
     }
@@ -80,6 +82,7 @@ export async function listarNotas(db: BancoSQL): Promise<ResumoNota[]> {
 
 interface LinhaItem {
   produtoId: string;
+  subitem: string | null;
   descricao: string;
   dataEmissao: string;
   quantidade: number;
@@ -95,7 +98,7 @@ interface LinhaItem {
  */
 export async function itensComprados(db: BancoSQL, produtoId?: string): Promise<ItemComprado[]> {
   const linhas = await db.getAllAsync<LinhaItem>(
-    `SELECT i.produto_id AS produtoId, i.descricao, n.data_emissao AS dataEmissao,
+    `SELECT i.produto_id AS produtoId, i.subitem, i.descricao, n.data_emissao AS dataEmissao,
             i.quantidade, i.unidade, i.valor_unitario AS valorUnitario, i.valor_total AS valorTotal
        FROM itens i JOIN notas n ON n.chave = i.chave_nota
       ${produtoId ? 'WHERE i.produto_id = ?' : ''}
@@ -110,11 +113,14 @@ export async function itensComprados(db: BancoSQL, produtoId?: string): Promise<
     unidade: lerUnidadeCupom(l.unidade),
     valorUnitario: l.valorUnitario,
     valorTotal: l.valorTotal,
+    ...(l.subitem ? { categoria: l.subitem } : {}),
   }));
 }
 
 export interface ResumoProduto {
   produtoId: string;
+  /** Subitem do IPCA (código do IBGE), ou null se não foi classificado. */
+  subitem: string | null;
   descricao: string;
   nomeEmitente: string | null;
   /** Em quantas notas o produto aparece. */
@@ -128,12 +134,28 @@ export interface ResumoProduto {
 /** Produtos já comprados, dos mais frequentes para os menos. */
 export async function listarProdutos(db: BancoSQL): Promise<ResumoProduto[]> {
   return db.getAllAsync<ResumoProduto>(
-    `SELECT i.produto_id AS produtoId, MAX(i.descricao) AS descricao, MAX(n.nome_emitente) AS nomeEmitente,
+    `SELECT i.produto_id AS produtoId, MAX(i.subitem) AS subitem, MAX(i.descricao) AS descricao, MAX(n.nome_emitente) AS nomeEmitente,
             COUNT(DISTINCT i.chave_nota) AS compras, COUNT(*) AS linhas, ROUND(SUM(i.valor_total), 2) AS gastoTotal,
             MAX(n.data_emissao) AS ultimaCompra
        FROM itens i JOIN notas n ON n.chave = i.chave_nota
       GROUP BY i.produto_id
       ORDER BY compras DESC, ultimaCompra DESC`,
+    [],
+  );
+}
+
+export interface GastoCategoria {
+  /** Subitem do IPCA, ou null para itens sem classificação. */
+  subitem: string | null;
+  gasto: number;
+  itens: number;
+}
+
+/** Quanto foi gasto em cada subitem do IPCA (para pesos e para a tela de gastos). */
+export async function gastosPorCategoria(db: BancoSQL): Promise<GastoCategoria[]> {
+  return db.getAllAsync<GastoCategoria>(
+    `SELECT subitem, ROUND(SUM(valor_total), 2) AS gasto, COUNT(*) AS itens
+       FROM itens GROUP BY subitem ORDER BY gasto DESC`,
     [],
   );
 }

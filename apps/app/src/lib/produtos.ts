@@ -35,6 +35,10 @@ export interface DetalheProduto {
   descricao: string;
   unidade: UnidadeBase;
   serie: VariacaoItem[];
+  /** Série mensal (para comparar com o IPCA, que é mensal), independente da aba escolhida. */
+  serieMensal: VariacaoItem[];
+  /** Subitem do IPCA do produto, quando classificado. */
+  subitem?: string;
 }
 
 export async function detalheProduto(
@@ -46,9 +50,12 @@ export async function detalheProduto(
   const ultimo = itens.at(-1);
   if (!ultimo) return null;
   const { unidade } = precoPorUnidadeBase(ultimo.valorUnitario, lerUnidadeCupom(ultimo.unidade), ultimo.descricao);
+  const observacoes = observacoesDeItens(itens);
   return {
     descricao: ultimo.descricao,
     unidade,
-    serie: variacaoDoItem(observacoesDeItens(itens), produtoId, granularidade),
+    serie: variacaoDoItem(observacoes, produtoId, granularidade),
+    serieMensal: variacaoDoItem(observacoes, produtoId, 'mes'),
+    subitem: ultimo.categoria,
   };
 }

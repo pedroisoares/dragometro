@@ -1,0 +1,203 @@
+0|7169|Índice geral
+1|7170|Alimentação e bebidas
+11|7171|Alimentação no domicílio
+1101|7172|Cereais, leguminosas e oleaginosas
+1101002|7173|Arroz
+1101051|7175|Feijão - mulatinho
+1101052|7176|Feijão - preto
+1101053|47617|Feijão - macáçar (fradinho)
+1101073|12222|Feijão - carioca (rajado)
+1101079|47618|Milho (em grão)
+1102|7184|Farinhas, féculas e massas
+1102001|7185|Farinha de arroz
+1102006|7187|Macarrão
+1102008|7188|Fubá de milho
+1102010|7190|Flocos de milho
+1102012|7191|Farinha de trigo
+1102023|7195|Farinha de mandioca
+1102029|107608|Massa semipreparada
+1102061|47619|Macarrão instantâneo
+1103|7200|Tubérculos, raízes e legumes
+1103002|7201|Batata-doce
+1103003|7202|Batata-inglesa
+1103004|7203|Inhame
+1103005|7204|Mandioca (aipim)
+1103020|7206|Abobrinha
+1103025|7209|Pepino
+1103026|7210|Pimentão
+1103028|7212|Tomate
+1103043|7215|Cebola
+1103044|7216|Cenoura
+1104|7219|Açúcares e derivados
+1104003|7220|Açúcar refinado
+1104004|7221|Açúcar cristal
+1104018|12224|Balas
+1104023|107609|Chocolate em barra e bombom
+1104032|7230|Sorvete
+1104052|107611|Chocolate e achocolatado em pó
+1104060|7233|Doce de frutas em pasta
+1104067|47620|Açúcar demerara
+1105|7241|Hortaliças e verduras
+1105001|7242|Alface
+1105004|7244|Coentro
+1105005|7245|Couve
+1105006|7246|Couve-flor
+1105010|7248|Repolho
+1105012|7249|Cheiro-verde
+1105019|7253|Brócolis
+1106|7254|Frutas
+1106001|7255|Banana-da-terra
+1106003|7256|Abacaxi
+1106004|7257|Abacate
+1106005|7258|Banana - d'água
+1106006|7259|Banana - maçã
+1106008|7260|Banana - prata
+1106011|7262|Laranja - baía
+1106012|7263|Laranja - lima
+1106015|7265|Limão
+1106017|7266|Maçã
+1106018|7267|Mamão
+1106019|7268|Manga
+1106020|7269|Maracujá
+1106021|7270|Melancia
+1106022|7271|Melão
+1106023|7272|Pera
+1106027|7275|Tangerina
+1106028|7276|Uva
+1106039|7279|Laranja - pera
+1106051|7280|Morango
+1106084|7281|Goiaba
+1107|7283|Carnes
+1107009|7285|Fígado
+1107018|7287|Carne de porco
+1107031|7288|Carne de carneiro
+1107081|7290|Cupim
+1107084|7291|Contrafilé
+1107085|7292|Filé-mignon
+1107087|7293|Chã de dentro
+1107088|7294|Alcatra
+1107089|7295|Patinho
+1107090|7296|Lagarto redondo
+1107091|12294|Lagarto comum
+1107093|7298|Músculo
+1107094|7299|Pá
+1107095|7300|Acém
+1107096|7301|Peito
+1107097|101448|Capa de filé
+1107099|7302|Costela
+1107208|47621|Picanha
+1108|7303|Pescados
+1108002|7305|Peixe - anchova
+1108004|7306|Peixe - corvina
+1108011|7309|Peixe - tainha
+1108012|7310|Peixe - sardinha
+1108013|7311|Camarão
+1108019|7313|Peixe - cavala
+1108029|107615|Peixe - cação
+1108031|107616|Peixe - merluza
+1108032|7317|Peixe - serra
+1108038|7320|Peixe - pescada
+1108045|7323|Caranguejo
+1108049|12300|Peixe - castanha
+1108052|12301|Peixe - palombeta
+1108072|101466|Peixe - curimatã
+1108075|12431|Peixe - salmão
+1108080|12302|Peixe - tilápia
+1108087|41129|Peixe - tambaqui
+1108088|7333|Peixe - dourada
+1108092|47623|Peixe - filhote
+1108096|8874|Peixe - peroá
+1108112|31694|Peixe - pintado
+1108125|47624|Peixe - aruanã
+1109|7335|Carnes e peixes industrializados
+1109002|7336|Presunto
+1109007|12304|Salsicha
+1109008|7339|Linguiça
+1109010|7341|Mortadela
+1109012|12305|Salame
+1109023|7343|Bacalhau
+1109056|12379|Carne-seca e de sol
+1109058|7347|Carne de porco salgada e defumada
+1110|7349|Aves e ovos
+1110009|107617|Frango inteiro
+1110010|107618|Frango em pedaços
+1110044|7355|Ovo de galinha
+1111|7356|Leites e derivados
+1111004|12393|Leite longa vida
+1111008|7358|Leite condensado
+1111009|7359|Leite em pó
+1111011|107619|Queijo
+1111019|12394|Iogurte e bebidas lácteas
+1111021|47627|Requeijão
+1111031|7367|Manteiga
+1111038|7368|Leite fermentado
+1112|7372|Panificados
+1112003|7373|Biscoito
+1112015|7375|Pão francês
+1112017|7376|Pão doce
+1112018|7377|Pão de forma
+1112019|7378|Bolo
+1112025|7380|Pão de queijo
+1113|7384|Óleos e gorduras
+1113013|7385|Óleo de soja
+1113014|7386|Azeite de oliva
+1113040|12395|Margarina
+1114|7389|Bebidas e infusões
+1114001|7390|Suco de frutas
+1114003|47628|Polpa de fruta (congelada)
+1114004|12396|Açaí (emulsão)
+1114022|7392|Café moído
+1114023|7393|Café solúvel
+1114083|107621|Refrigerante e água mineral
+1114084|7396|Cerveja
+1114085|7397|Outras bebidas alcoólicas
+1114087|7399|Vinho
+1114090|47630|Suco em pó
+1114091|47631|Chá mate (erva mate)
+1115|7401|Enlatados e conservas
+1115013|107702|Alimento infantil
+1115016|7406|Palmito em conserva
+1115017|7407|Pepino em conserva
+1115039|107624|Sardinha em conserva
+1115050|107625|Salsicha em conserva
+1115056|7411|Sopa desidratada
+1115057|7412|Azeitona
+1115058|107628|Milho-verde em conserva
+1115075|107630|Atum em conserva
+1116|7415|Sal e condimentos
+1116001|7416|Leite de coco
+1116005|109463|Atomatado
+1116010|7418|Alho
+1116013|12397|Sal
+1116022|7420|Colorau
+1116023|7421|Caldo de tucupi
+1116026|7422|Fermento
+1116033|7423|Maionese
+1116041|7424|Vinagre
+1116048|7425|Caldo concentrado
+1116071|7428|Tempero misto
+2104|7461|Artigos de limpeza
+2104003|7463|Saco para lixo
+2104005|7464|Água sanitária
+2104008|7465|Detergente
+2104009|7466|Sabão em pó
+2104012|7467|Desinfetante
+2104015|7470|Sabão em barra
+2104016|7471|Esponja de limpeza
+2104019|47635|Sabão líquido
+2104020|47636|Limpador multiuso
+2104041|7477|Papel toalha
+2104085|47637|Amaciante e alvejante
+6301|7698|Higiene pessoal
+6301001|7699|Produto para cabelo
+6301002|12420|Fralda descartável
+6301004|101642|Produto para barba
+6301006|101644|Produto para pele
+6301007|107661|Produto para higiene bucal
+6301010|7703|Produto para unha
+6301011|7704|Perfume
+6301014|7707|Desodorante
+6301015|7708|Absorvente higiênico
+6301016|7709|Sabonete
+6301017|7710|Papel higiênico
+6301020|7711|Artigos de maquiagem

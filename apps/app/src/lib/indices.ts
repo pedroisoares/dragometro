@@ -1,18 +1,30 @@
-import { variacaoMensal, type Indice } from '@dragometro/ibge';
+import { variacaoMensal, variacaoMensalCategoria, type Indice } from '@dragometro/ibge';
 import { Platform } from 'react-native';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+async function viaApi(caminho: string): Promise<Map<string, number>> {
+  const resposta = await fetch(`${API_URL}${caminho}`);
+  if (!resposta.ok) throw new Error(`A API respondeu ${resposta.status}`);
+  const { serie } = (await resposta.json()) as { serie: Record<string, number> };
+  return new Map(Object.entries(serie));
+}
 
 /**
  * Variação mensal de um índice oficial nos últimos meses.
  * Na Web, quando a API está configurada, busca por ela (evita problemas de CORS com o IBGE).
  */
 export async function buscarIndice(indice: Indice, ultimos = 12): Promise<Map<string, number>> {
-  if (Platform.OS === 'web' && API_URL) {
-    const resposta = await fetch(`${API_URL}/indices/${indice}?ultimos=${ultimos}`);
-    if (!resposta.ok) throw new Error(`A API respondeu ${resposta.status}`);
-    const { serie } = (await resposta.json()) as { serie: Record<string, number> };
-    return new Map(Object.entries(serie));
-  }
+  if (Platform.OS === 'web' && API_URL) return viaApi(`/indices/${indice}?ultimos=${ultimos}`);
   return variacaoMensal(indice, { ultimos });
+}
+
+/** Variação mensal de uma categoria do índice (pelo código SIDRA), ex.: "12393" = Leite longa vida. */
+export async function buscarIndiceCategoria(
+  indice: Indice,
+  codigoSidra: string,
+  ultimos = 12,
+): Promise<Map<string, number>> {
+  if (Platform.OS === 'web' && API_URL) return viaApi(`/indices/${indice}/categoria/${codigoSidra}?ultimos=${ultimos}`);
+  return variacaoMensalCategoria(indice, codigoSidra, { ultimos });
 }

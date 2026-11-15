@@ -1,4 +1,5 @@
 import { formatarPercentual } from '@dragometro/core';
+import { categoria } from '@dragometro/classificacao';
 import { Link } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { porUnidade, reais } from '../../lib/formato';
@@ -24,6 +25,9 @@ export default function Produtos() {
           <Pressable style={estilos.cartao}>
             <View style={{ flex: 1 }}>
               <Text style={estilos.titulo}>{item.descricao}</Text>
+              <Text style={[estilos.categoria, !item.subitem && { color: cores.textoSuave }]}>
+                {item.subitem ? categoria(item.subitem)?.nome : 'Sem categoria'}
+              </Text>
               <Text style={estilos.suave}>
                 {item.nomeEmitente ?? ''} · {item.compras} {item.compras === 1 ? 'compra' : 'compras'}
                 {item.linhas > item.compras ? ` · ${item.linhas} itens nos cupons` : ''}
@@ -34,11 +38,14 @@ export default function Produtos() {
                 {reais(item.precoAtual)}
                 {porUnidade(item.unidade)}
               </Text>
-              {item.ultimaVariacao !== undefined && (
-                <Text style={{ color: item.ultimaVariacao > 0 ? cores.vermelho : cores.verde }}>
-                  {item.ultimaVariacao > 0 ? '▲' : '▼'} {formatarPercentual(Math.abs(item.ultimaVariacao), 1)}
-                </Text>
-              )}
+              {item.ultimaVariacao !== undefined &&
+                (Math.abs(item.ultimaVariacao) < 0.0005 ? (
+                  <Text style={{ color: cores.textoSuave }}>= estável</Text>
+                ) : (
+                  <Text style={{ color: item.ultimaVariacao > 0 ? cores.vermelho : cores.verde }}>
+                    {item.ultimaVariacao > 0 ? '▲' : '▼'} {formatarPercentual(Math.abs(item.ultimaVariacao), 1)}
+                  </Text>
+                ))}
             </View>
           </Pressable>
         </Link>
@@ -59,4 +66,5 @@ const estilos = StyleSheet.create({
   titulo: { color: cores.texto, fontWeight: '600', fontSize: 15 },
   preco: { color: cores.texto, fontWeight: '700', fontVariant: ['tabular-nums'] },
   suave: { color: cores.textoSuave, fontSize: 13 },
+  categoria: { color: cores.dragao, fontSize: 12, fontWeight: '600' },
 });

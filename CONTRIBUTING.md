@@ -34,10 +34,18 @@ Escreva um teste em `packages/sefaz/test/<uf>.test.ts` usando `lerNotaDaPagina(h
 
 Conte no PR o estado, o mês do cupom e se o portal tinha alguma particularidade (captcha, página carregada por JavaScript, iframe...).
 
+## Ensinar o app a reconhecer produtos
+
+Quando um produto aparece como "Sem categoria", dá para ensinar o app em dois passos:
+
+1. Em `packages/classificacao/src/regras.ts`, acrescente uma regra perto das parecidas. Ela diz o código do subitem do IPCA e um padrão para a descrição normalizada (maiúsculas, sem acentos). Os códigos estão em `packages/classificacao/dados/catalogo-ipca.txt`.
+2. Em `packages/classificacao/test/classificacao.test.ts`, acrescente a descrição como aparece no cupom e o subitem esperado.
+
+Lembre que a primeira regra que casar vence: coloque a sua antes de regras mais genéricas que possam capturar a descrição.
+
 ## Outras formas de ajudar
 
 - **Metodologia:** revise `docs/metodologia.md` e o pacote `core`. Economistas e estatísticos são muito bem-vindos.
-- **Classificação de produtos:** associar descrições de cupom ("LEITE UHT INT 1L") aos subitens do IPCA ("1111004 Leite longa vida").
 - **App:** telas, acessibilidade, design.
 
 ## Regras de convivência
