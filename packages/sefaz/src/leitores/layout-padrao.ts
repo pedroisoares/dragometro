@@ -3,6 +3,17 @@ import { lerDataHoraBR, lerNumeroBR } from '../numeros';
 import type { ChaveAcesso, ItemNota, LeitorSefaz, NotaFiscal } from '../tipos';
 
 /**
+ * A página veio, mas sem os itens. Costuma ser a página de verificação anti-robô
+ * do portal (que exige JavaScript) ou um layout diferente.
+ */
+export class ErroSemItens extends Error {
+  constructor(readonly tituloPagina?: string) {
+    super(`Nenhum item encontrado na página da SEFAZ${tituloPagina ? ` ("${tituloPagina}")` : ''}`);
+    this.name = 'ErroSemItens';
+  }
+}
+
+/**
  * Layout de consulta da NFC-e usado por vários estados: uma tabela `#tabResult`
  * com uma linha por item e os campos em spans com as classes
  * `txtTit` (descrição), `RCod` (código), `Rqtd` (quantidade), `RUN` (unidade),
@@ -37,7 +48,10 @@ export const layoutPadrao: LeitorSefaz = {
         valorTotal: lerNumeroBR(valorTotal),
       });
     }
-    if (itens.length === 0) throw new Error('Nenhum item encontrado na página da SEFAZ');
+    if (itens.length === 0) {
+      const titulo = doc.querySelector('title')?.text.trim();
+      throw new ErroSemItens(titulo);
+    }
 
     const textoPagina = doc.text.replace(/\s+/g, ' ');
     const totalNota = /Valor a pagar R\$:?\s*([\d.,]+)/i.exec(textoPagina)?.[1];

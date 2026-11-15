@@ -1,17 +1,18 @@
 import { salvarNota, type ResultadoSalvar } from '@dragometro/armazenamento';
-import { chaveDoQrCode, type NotaFiscal } from '@dragometro/sefaz';
+import { chaveDoQrCode, lerNotaDaPagina, type NotaFiscal } from '@dragometro/sefaz';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { Link } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { buscarNota } from '../lib/consulta';
+import { PaginaSefazOculta } from '../lib/PaginaSefazOculta';
 import { dataCurta, numero, reais } from '../lib/formato';
 import { cores, espaco } from '../tema';
 
 type Estado =
   | { tipo: 'lendo' }
-  | { tipo: 'consultando'; chave: string }
+  | { tipo: 'consultando'; chave: string; viaNavegador?: string }
   | { tipo: 'pronto'; nota: NotaFiscal; resultado: ResultadoSalvar }
   | { tipo: 'erro'; mensagem: string };
 
@@ -28,11 +29,32 @@ export default function LerCupom() {
     try {
       const chave = chaveDoQrCode(conteudoQr);
       setEstado({ tipo: 'consultando', chave: chave.chave });
-      const nota = await buscarNota(conteudoQr);
-      const resultado = await salvarNota(db, nota);
-      setEstado({ tipo: 'pronto', nota, resultado });
+      const busca = await buscarNota(conteudoQr);
+      if (busca.tipo === 'usar-navegador') {
+        // Portal com verificação anti-robô: abre a página no WebView invisível.
+        setEstado({ tipo: 'consultando', chave: chave.chave, viaNavegador: conteudoQr });
+        return;
+      }
+      await concluir(busca.nota);
     } catch (e) {
-      setEstado({ tipo: 'erro', mensagem: e instanceof Error ? e.message : String(e) });
+      falhar(e);
+    }
+  }
+
+  async function concluir(nota: NotaFiscal) {
+    const resultado = await salvarNota(db, nota);
+    setEstado({ tipo: 'pronto', nota, resultado });
+  }
+
+  function falhar(e: unknown) {
+    setEstado({ tipo: 'erro', mensagem: e instanceof Error ? e.message : String(e) });
+  }
+
+  async function aoReceberHtml(html: string, conteudoQr: string) {
+    try {
+      await concluir(lerNotaDaPagina(html, conteudoQr));
+    } catch (e) {
+      falhar(e);
     }
   }
 
@@ -46,8 +68,17 @@ export default function LerCupom() {
     return (
       <View style={estilos.centro}>
         <ActivityIndicator color={cores.dragao} size="large" />
-        <Text style={estilos.texto}>Consultando a SEFAZ...</Text>
+        <Text style={estilos.texto}>
+          {estado.viaNavegador ? 'Passando pela verificação da SEFAZ...' : 'Consultando a SEFAZ...'}
+        </Text>
         <Text style={estilos.suave}>{estado.chave}</Text>
+        {estado.viaNavegador && (
+          <PaginaSefazOculta
+            url={estado.viaNavegador}
+            aoReceberHtml={(html) => aoReceberHtml(html, estado.viaNavegador!)}
+            aoFalhar={falhar}
+          />
+        )}
       </View>
     );
   }
