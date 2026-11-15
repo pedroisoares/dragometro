@@ -53,20 +53,25 @@ docs/        metodologia e decisões
 
 Tudo é TypeScript. Os leitores da SEFAZ ficam num pacote próprio porque o mesmo código roda no celular e na API.
 
-## Rodando
+## Instalando e testando
 
-Requisitos: Node 22+ e pnpm 10+.
+O passo a passo completo, para quem vai usar e para quem vai contribuir, está em **[docs/instalacao.md](docs/instalacao.md)**.
+
+Resumo para quem já tem Node 22 e pnpm 10:
 
 ```bash
+git clone https://github.com/pedroisoares/dragometro.git
+cd dragometro
 pnpm install
-pnpm test          # testes de todos os pacotes
-pnpm typecheck     # checagem de tipos
 
-pnpm app           # inicia o app (Expo). Use o Expo Go no celular ou pressione "w" para Web
-pnpm api           # inicia a API em http://localhost:3333
+# Celular (Expo Go): um terminal
+pnpm app
+
+# Computador (navegador): dois terminais
+cp apps/app/.env.example apps/app/.env   # uma vez só
+pnpm api     # terminal 1
+pnpm web     # terminal 2 → http://localhost:8081
 ```
-
-Para a versão Web consultar a SEFAZ, copie `apps/app/.env.example` para `apps/app/.env` e deixe a API rodando.
 
 ## Contribuindo
 
