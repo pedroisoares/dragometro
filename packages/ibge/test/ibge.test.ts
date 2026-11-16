@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { subitens, variacaoMensal } from '../src';
+import { subitens, variacaoMensal, variacaoMensalCategoria } from '../src';
 
 // Respostas no formato real do SIDRA (valores de set e out/2026, consultados em 15/11/2026).
 const CABECALHO_GERAL = {
@@ -60,5 +60,18 @@ describe('subitens', () => {
     expect(geral.peso).toBeCloseTo(1, 10);
 
     expect(lista.find((s) => s.codigoSidra === '99999')!.variacao).toBeUndefined();
+  });
+});
+
+describe('variacaoMensalCategoria', () => {
+  it('busca um subitem pelo código SIDRA', async () => {
+    const urls: string[] = [];
+    const corpo = [
+      ipcaSubitens[0],
+      { V: '-0.67', D2C: '63', D3C: '202610', D4C: '12393', D4N: '1111004.Leite longa vida' },
+    ];
+    const serie = await variacaoMensalCategoria('IPCA', '12393', { ultimos: 1 }, fetchFalso(corpo, urls));
+    expect(urls[0]).toContain('/t/7060/n1/all/v/63/p/last%201/c315/12393');
+    expect(serie.get('2026-10')).toBeCloseTo(-0.0067, 10);
   });
 });

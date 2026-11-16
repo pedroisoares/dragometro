@@ -15,6 +15,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@dragometro/classificacao": "workspace:*",
     "@dragometro/core": "workspace:*",
     "@dragometro/sefaz": "workspace:*"
   },

@@ -46,6 +46,19 @@ wᵢ(t) = wᵢ(t−1) × [pᵢ(t) / pᵢ(t−1)] / I(t)
 
 Código: `indicePessoal` em `packages/core/src/indice.ts`.
 
+### 4.1 Por categoria do IBGE (o que o app usa)
+
+Cada item do cupom é encaixado num **subitem do IPCA** (ver seção 6). O cálculo segue então a mesma estrutura do IBGE:
+
+1. **Dentro do subitem:** os relativos de preço dos produtos comprados nos dois meses são juntados por **média geométrica** (Jevons). Assim, o leite da loja A e o leite da loja B entram juntos em "Leite longa vida", mesmo sendo produtos diferentes.
+2. **Entre subitens:** Laspeyres modificado, como acima, com pesos pela participação de cada subitem no gasto.
+
+Itens sem classificação não somem: cada um vira uma categoria sozinho.
+
+Os pesos usam o gasto de **todos os cupons guardados**, que fazem para você o papel que a POF faz para o IPCA. Com o tempo, o certo é fixar um período-base, como o IBGE faz.
+
+Código: `indicePorCategoria` em `packages/core/src/indice.ts`.
+
 ### Inflação não é variação do gasto
 
 Se o seu gasto subiu 20% porque você comprou mais, isso não é inflação. O índice mede **só preço**, com a cesta fixa. O app mostra os dois números separados.
@@ -67,6 +80,18 @@ As tabelas de subitem usam a classificação 315 e começam em janeiro de 2020, 
 - **INPC:** famílias com renda de 1 a 5 salários mínimos. Alimentação pesa mais. Usado para corrigir o salário mínimo e benefícios do INSS.
 
 **Limite importante:** os cupons de supermercado cobrem bem "alimentação no domicílio", mas não aluguel, energia, combustível, saúde ou educação. Enquanto essas despesas não forem lançadas no app, compare a sua inflação com o grupo **"11. Alimentação no domicílio"** do IPCA, e não com o índice geral.
+
+## 6. Classificação nos subitens do IPCA
+
+As descrições dos cupons vêm abreviadas ("QJ M FRESC BANDEIRA PT KG", "CR DEN COLGATE"). O pacote `packages/classificacao` faz o encaixe assim:
+
+1. **Normaliza a descrição:** maiúsculas, sem acentos, pontuação vira espaço.
+2. **Aplica regras em ordem** (`src/regras.ts`); a primeira que casar define o subitem. As regras mais específicas vêm antes: "biscoito de chocolate" é biscoito, não chocolate, e "creme dental" é higiene, não creme de leite.
+3. **Usa o catálogo oficial:** os códigos e nomes vêm da tabela 7060 do SIDRA (`dados/catalogo-ipca.txt`). Nesse catálogo estão alimentação no domicílio, artigos de limpeza e higiene pessoal.
+
+Alguns produtos não têm subitem no IPCA (creme de leite, batata palha) e ficam como "Sem categoria". Nos cupons reais de teste, 33 de 35 itens foram classificados.
+
+A comparação de um produto com o IPCA é feita com o subitem dele: o seu arroz contra o "Arroz" do IPCA. O IBGE divulga o IPCA de cada mês por volta do dia 10 do mês seguinte.
 
 ## Referências
 

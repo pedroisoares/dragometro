@@ -9,6 +9,7 @@ export function observacoesDeItens(itens: readonly ItemComprado[]): ObservacaoPr
     produtoId: item.produtoId,
     data: item.data,
     preco: precoPorUnidadeBase(item.valorUnitario, lerUnidadeCupom(item.unidade), item.descricao).preco,
+    ...(item.categoria ? { categoria: item.categoria } : {}),
   }));
 }
 
@@ -172,4 +173,75 @@ export function compararComOficial(
       const o = oficial.get(p.periodo)!;
       return { periodo: p.periodo, pessoal: p.variacao, oficial: o, diferenca: p.variacao - o };
     });
+}
+
+/**
+ * Chave usada para agrupar no índice por categoria: o subitem do IPCA quando existe;
+ * sem classificação, o produto vira uma categoria sozinho (para não sumir do índice).
+ */
+export function chaveCategoria(x: { produtoId: string; categoria?: string }): string {
+  return x.categoria ?? `produto:${x.produtoId}`;
+}
+
+/**
+ * Índice pessoal com a mesma estrutura do IPCA:
+ *
+ * 1. Dentro de cada categoria (subitem), os relativos de preço dos produtos comprados
+ *    nos dois períodos são juntados por média geométrica (Jevons). Assim o leite da
+ *    loja A e o leite da loja B entram juntos em "Leite longa vida".
+ * 2. Entre categorias, Laspeyres modificado com pesos pela participação no gasto,
+ *    atualizados a cada período pela variação da categoria.
+ *
+ * `pesosIniciais` usa as chaves de `chaveCategoria` (veja `pesosPorGasto(itens, chaveCategoria)`).
+ */
+export function indicePorCategoria(
+  observacoes: readonly ObservacaoPreco[],
+  pesosIniciais: ReadonlyMap<string, number>,
+  granularidade: Granularidade = 'mes',
+): PontoSerie[] {
+  const categoriaDoProduto = new Map<string, string>();
+  for (const o of observacoes) categoriaDoProduto.set(o.produtoId, chaveCategoria(o));
+
+  const precos = precosPorPeriodo(
+    observacoes.filter((o) => pesosIniciais.has(chaveCategoria(o))),
+    granularidade,
+  );
+  const periodos = [...new Set([...precos.values()].flatMap((m) => [...m.keys()]))].sort();
+
+  const pesos = new Map(pesosIniciais);
+  const serie: PontoSerie[] = [];
+  let acumulado = 1;
+
+  for (let t = 1; t < periodos.length; t++) {
+    const anterior = periodos[t - 1]!;
+    const atual = periodos[t]!;
+
+    // Relativos de cada produto, agrupados por categoria.
+    const relativosPorCategoria = new Map<string, number[]>();
+    for (const [produtoId, porPeriodo] of precos) {
+      const p0 = porPeriodo.get(anterior);
+      const p1 = porPeriodo.get(atual);
+      if (p0 === undefined || p1 === undefined) continue;
+      const cat = categoriaDoProduto.get(produtoId)!;
+      relativosPorCategoria.set(cat, [...(relativosPorCategoria.get(cat) ?? []), p1 / p0]);
+    }
+    if (relativosPorCategoria.size === 0) continue;
+
+    // Jevons dentro da categoria; Laspeyres entre categorias.
+    const relativos = new Map([...relativosPorCategoria].map(([cat, rs]) => [cat, mediaGeometrica(rs)]));
+    let somaPesos = 0;
+    let somaPonderada = 0;
+    for (const [cat, r] of relativos) {
+      const w = pesos.get(cat) ?? 0;
+      somaPesos += w;
+      somaPonderada += w * r;
+    }
+    if (somaPesos === 0) continue;
+    const indice = somaPonderada / somaPesos;
+    for (const [cat, r] of relativos) pesos.set(cat, ((pesos.get(cat) ?? 0) * r) / indice);
+
+    acumulado *= indice;
+    serie.push({ periodo: atual, variacao: indice - 1, acumulado: acumulado - 1 });
+  }
+  return serie;
 }

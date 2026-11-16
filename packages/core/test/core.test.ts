@@ -3,7 +3,9 @@ import {
   acumular,
   compararComOficial,
   extrairEmbalagem,
+  chaveCategoria,
   indicePessoal,
+  indicePorCategoria,
   lerUnidadeCupom,
   mediaGeometrica,
   pesosPorGasto,
@@ -132,5 +134,49 @@ describe('períodos', () => {
     expect(semanaISO('2026-11-15')).toBe('2026-W46'); // domingo
     expect(semanaISO('2026-11-16')).toBe('2026-W47'); // segunda
     expect(semanaISO('2027-01-01')).toBe('2026-W53');
+  });
+});
+
+describe('índice por categoria (como o IPCA: Jevons dentro, Laspeyres entre)', () => {
+  // Leite comprado em duas lojas (produtos diferentes, mesma categoria) e arroz.
+  const obs: ObservacaoPreco[] = [
+    { produtoId: 'lojaA:leite', categoria: '1111004', data: '2026-01-10', preco: 5 },
+    { produtoId: 'lojaB:leite', categoria: '1111004', data: '2026-01-12', preco: 4 },
+    { produtoId: 'lojaA:arroz', categoria: '1101002', data: '2026-01-10', preco: 30 },
+    { produtoId: 'lojaA:leite', categoria: '1111004', data: '2026-02-10', preco: 5.5 },
+    { produtoId: 'lojaB:leite', categoria: '1111004', data: '2026-02-12', preco: 4 },
+    { produtoId: 'lojaA:arroz', categoria: '1101002', data: '2026-02-10', preco: 30 },
+  ];
+  const pesos = new Map([
+    ['1111004', 0.5],
+    ['1101002', 0.5],
+  ]);
+
+  it('junta lojas diferentes na mesma categoria pela média geométrica', () => {
+    const [fev] = indicePorCategoria(obs, pesos, 'mes');
+    const leite = Math.sqrt(1.1 * 1); // Jevons: +10% numa loja, 0% na outra
+    expect(fev!.periodo).toBe('2026-02');
+    expect(fev!.variacao).toBeCloseTo(0.5 * leite + 0.5 * 1 - 1, 10);
+  });
+
+  it('produto sem categoria vira uma categoria sozinho', () => {
+    expect(chaveCategoria({ produtoId: 'x' })).toBe('produto:x');
+    expect(chaveCategoria({ produtoId: 'x', categoria: '1111004' })).toBe('1111004');
+  });
+
+  it('com uma categoria por produto, dá o mesmo que o índice por produto', () => {
+    const porProduto = obs.map(({ categoria: _c, ...o }) => o);
+    const pesosProduto = new Map([
+      ['lojaA:leite', 0.25],
+      ['lojaB:leite', 0.25],
+      ['lojaA:arroz', 0.5],
+    ]);
+    const a = indicePessoal(porProduto, pesosProduto, 'mes');
+    const b = indicePorCategoria(
+      porProduto,
+      new Map([...pesosProduto].map(([k, v]) => [`produto:${k}`, v])),
+      'mes',
+    );
+    expect(b[0]!.variacao).toBeCloseTo(a[0]!.variacao, 10);
   });
 });

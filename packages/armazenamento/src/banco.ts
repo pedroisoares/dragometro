@@ -12,7 +12,37 @@ export interface BancoSQL {
   withTransactionAsync(tarefa: () => Promise<void>): Promise<void>;
 }
 
-const VERSAO_ATUAL = 1;
+import { classificar } from '@dragometro/classificacao';
+
+const VERSAO_ATUAL = 2;
+
+/** Esquema da versão 1 (exportado só para os testes de migração). */
+export const ESQUEMA_V1 = `
+  CREATE TABLE notas (
+    chave          TEXT PRIMARY KEY NOT NULL,
+    uf             TEXT NOT NULL,
+    cnpj_emitente  TEXT NOT NULL,
+    nome_emitente  TEXT,
+    data_emissao   TEXT NOT NULL,
+    valor_total    REAL,
+    lida_em        TEXT NOT NULL
+  );
+  CREATE TABLE itens (
+    id              INTEGER PRIMARY KEY NOT NULL,
+    chave_nota      TEXT NOT NULL REFERENCES notas(chave) ON DELETE CASCADE,
+    ordem           INTEGER NOT NULL,
+    produto_id      TEXT NOT NULL,
+    codigo          TEXT,
+    descricao       TEXT NOT NULL,
+    quantidade      REAL NOT NULL,
+    unidade         TEXT NOT NULL,
+    valor_unitario  REAL NOT NULL,
+    valor_total     REAL NOT NULL
+  );
+  CREATE INDEX itens_produto ON itens(produto_id);
+  CREATE INDEX itens_nota ON itens(chave_nota);
+  CREATE INDEX notas_data ON notas(data_emissao);
+`;
 
 /**
  * Cria ou atualiza o esquema. Chame uma vez ao abrir o banco
@@ -32,32 +62,19 @@ export async function migrar(db: BancoSQL): Promise<void> {
 
   await db.withTransactionAsync(async () => {
     if (versao < 1) {
+      await db.execAsync(ESQUEMA_V1);
+    }
+    if (versao < 2) {
+      // v2: subitem do IPCA de cada item, e classificação dos itens já guardados.
       await db.execAsync(`
-        CREATE TABLE notas (
-          chave          TEXT PRIMARY KEY NOT NULL,
-          uf             TEXT NOT NULL,
-          cnpj_emitente  TEXT NOT NULL,
-          nome_emitente  TEXT,
-          data_emissao   TEXT NOT NULL,
-          valor_total    REAL,
-          lida_em        TEXT NOT NULL
-        );
-        CREATE TABLE itens (
-          id              INTEGER PRIMARY KEY NOT NULL,
-          chave_nota      TEXT NOT NULL REFERENCES notas(chave) ON DELETE CASCADE,
-          ordem           INTEGER NOT NULL,
-          produto_id      TEXT NOT NULL,
-          codigo          TEXT,
-          descricao       TEXT NOT NULL,
-          quantidade      REAL NOT NULL,
-          unidade         TEXT NOT NULL,
-          valor_unitario  REAL NOT NULL,
-          valor_total     REAL NOT NULL
-        );
-        CREATE INDEX itens_produto ON itens(produto_id);
-        CREATE INDEX itens_nota ON itens(chave_nota);
-        CREATE INDEX notas_data ON notas(data_emissao);
+        ALTER TABLE itens ADD COLUMN subitem TEXT;
+        CREATE INDEX itens_subitem ON itens(subitem);
       `);
+      const itens = await db.getAllAsync<{ id: number; descricao: string }>('SELECT id, descricao FROM itens', []);
+      for (const item of itens) {
+        const cat = classificar(item.descricao);
+        if (cat) await db.runAsync('UPDATE itens SET subitem = ? WHERE id = ?', [cat.codigo, item.id]);
+      }
     }
     await db.execAsync(`PRAGMA user_version = ${VERSAO_ATUAL}`);
   });

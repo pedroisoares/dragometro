@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@dragometro/armazenamento": "workspace:*",
+    "@dragometro/classificacao": "workspace:*",
     "@dragometro/core": "workspace:*",
     "@dragometro/ibge": "workspace:*",
     "@dragometro/sefaz": "workspace:*",

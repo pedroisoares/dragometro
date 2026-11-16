@@ -124,3 +124,27 @@ export async function subitens(
   }
   return [...porChave.values()];
 }
+
+/**
+ * Variação mensal de uma categoria do índice (grupo, subgrupo, item ou subitem),
+ * pelo código SIDRA da classificação 315 (ex.: "12393" = Leite longa vida;
+ * "7171" = Alimentação no domicílio). Fração: 0,01 = 1%.
+ */
+export async function variacaoMensalCategoria(
+  indice: Indice,
+  codigoSidra: string,
+  periodo: Periodo = { ultimos: 12 },
+  fetchFn: typeof fetch = fetch,
+): Promise<Map<string, number>> {
+  const t = TABELAS[indice];
+  const linhas = await consultar(
+    `/t/${t.subitens}/n1/all/v/${t.variacaoSub}/p/${periodoParaSidra(periodo)}/c315/${codigoSidra}`,
+    fetchFn,
+  );
+  const pares: [string, number][] = [];
+  for (const l of linhas) {
+    const v = numeroSidra(l.V);
+    if (l.D3C && v !== undefined) pares.push([mesSidra(l.D3C), v / 100]);
+  }
+  return new Map(pares.sort(([a], [b]) => a.localeCompare(b)));
+}

@@ -31,6 +31,8 @@ export interface ObservacaoPreco {
   data: DataISO;
   /** Preço por unidade base (R$/un, R$/kg ou R$/L). */
   preco: number;
+  /** Subitem do IPCA (ex.: "1111004"), quando o produto foi classificado. */
+  categoria?: string;
 }
 
 export type Granularidade = 'semana' | 'mes' | 'ano';
