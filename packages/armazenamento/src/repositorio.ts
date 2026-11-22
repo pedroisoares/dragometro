@@ -149,6 +149,52 @@ export async function salvarCupomFoto(
   return resultado;
 }
 
+export interface ItemDaNota {
+  ordem: number;
+  produtoId: string;
+  descricao: string;
+  quantidade: number;
+  unidade: string;
+  valorUnitario: number;
+  valorTotal: number;
+  /** Subitem do IPCA, ou null se não foi classificado. */
+  subitem: string | null;
+}
+
+export interface DetalheNota extends ResumoNota {
+  /** CNPJ da loja, ou `loja:NOME` para lojas sem CNPJ. */
+  lojaId: string;
+  itens: ItemDaNota[];
+}
+
+/** Um cupom guardado, com os itens na ordem do cupom. */
+export async function detalheNota(db: BancoSQL, chave: string): Promise<DetalheNota | null> {
+  const nota = await db.getFirstAsync<Omit<DetalheNota, 'itens' | 'quantidadeItens'>>(
+    `SELECT chave, cnpj_emitente AS lojaId, nome_emitente AS nomeEmitente, data_emissao AS dataEmissao,
+            valor_total AS valorTotal, origem
+       FROM notas WHERE chave = ?`,
+    [chave],
+  );
+  if (!nota) return null;
+  const itens = await db.getAllAsync<ItemDaNota>(
+    `SELECT ordem, produto_id AS produtoId, descricao, quantidade, unidade, valor_unitario AS valorUnitario,
+            valor_total AS valorTotal, subitem
+       FROM itens WHERE chave_nota = ? ORDER BY ordem`,
+    [chave],
+  );
+  return { ...nota, quantidadeItens: itens.length, itens };
+}
+
+/**
+ * Corrige o nome de uma loja em todas as compras dela. Para lojas sem CNPJ, os próximos
+ * cupons lidos pela foto com nome parecido também caem nessa loja (veja `acharLoja`).
+ */
+export async function renomearLoja(db: BancoSQL, lojaId: string, nome: string): Promise<void> {
+  const limpo = nome.trim().replace(/\s+/g, ' ');
+  if (!limpo) throw new Error('O nome da loja não pode ficar vazio.');
+  await db.runAsync('UPDATE notas SET nome_emitente = ? WHERE cnpj_emitente = ?', [limpo, lojaId]);
+}
+
 export async function excluirNota(db: BancoSQL, chave: string): Promise<void> {
   await db.runAsync('DELETE FROM notas WHERE chave = ?', [chave]);
 }

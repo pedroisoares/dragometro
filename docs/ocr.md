@@ -14,8 +14,9 @@ foto ──► motor de OCR ──► texto ──► chavesNoTexto() ──► 
    - O motor atual é `motorOcrApi` (`apps/app/src/lib/ocr.ts`). Ele manda a foto para `POST /ocr` na API.
    - A API (`apps/api/src/ocr.ts`) prepara a imagem com `sharp`:
      - corrige a orientação da câmera;
+     - endireita a foto torta: mede a inclinação das linhas de texto (de -8° a 8°) e gira a imagem;
      - recorta só o papel (a mesa em volta vira "texto" lixo);
-     - amplia fotos pequenas;
+     - deixa o papel sempre com 1.700 px de largura, tanto na foto pequena do WhatsApp quanto na de 12 megapixels da câmera, para as letras saírem sempre do mesmo tamanho;
      - uniformiza a iluminação, dividindo cada ponto pela média da vizinhança, contra sombra e papel desbotado.
    - Depois roda o Tesseract (`tesseract.js`) no modo "bloco único", que mantém descrição e valor na mesma linha. O modelo de português vem empacotado no npm. Nada é baixado da internet, e a foto não é guardada.
 3. **Texto → chave:** `chavesNoTexto` (`packages/sefaz/src/texto.ts`) procura 44 dígitos.
@@ -52,7 +53,10 @@ texto do OCR ──► lerCupomDoTexto() ──► conferência da conta ──�
    - O peso tem 3 casas e o preço 2, então "1890" é 18,90 mesmo sem vírgula.
    - O leitor procura a combinação de quantidade × preço = total (com arredondamento ou truncamento) que muda menos dígitos do que foi lido.
    - Exemplo: com 0,230 kg e R$ 2,76, o preço só pode ficar entre 11,98 e 12,02. Se o OCR leu "11,68", o certo é 11,98.
-3. **Desempate pela soma.** Quando uma linha tem mais de uma conta possível, o leitor escolhe a combinação que faz a soma dos itens bater com o TOTAL do cupom.
+   - **Bom senso:** ignora leituras absurdas, como preço acima de R$ 500/kg, peso acima de 50 kg ou item maior que o cupom inteiro.
+   - Quando é preciso mudar 4 ou mais dígitos, o leitor **não inventa**. Fica o total lido, e peso e preço vêm em branco para a pessoa completar.
+   - O OCR troca o "X" por "Y" ou "A", lê "KG" como "K6", repete dígitos ("22,688", ano "20286") e deixa "?" no lugar de dígitos. O leitor entende esses casos.
+3. **Desempate pela soma.** Quando uma linha tem mais de uma conta possível, o leitor escolhe a combinação que faz a soma dos itens bater com o TOTAL do cupom, mexendo no menor número de itens. O próprio TOTAL pode ter sido mal lido. Por isso, as linhas de pagamento logo abaixo (CARTÃO, DINHEIRO) servem de segunda opinião: vale o valor que bate com os itens mexendo menos.
 4. **Revisão.** A pessoa vê tudo editável, com a foto ao lado para comparar.
    - Cada item mostra "✓ confere", "✓ corrigido pela conta" ou "⚠ confira com o cupom".
    - A tela avisa se a soma não bate com o total.
@@ -64,7 +68,12 @@ texto do OCR ──► lerCupomDoTexto() ──► conferência da conta ──�
 
 A classificação no IPCA usa só a descrição, então funciona igual à dos cupons da SEFAZ.
 
-**Resultado com um cupom real de verdurão** (16 itens, foto de celular sobre a mesa): 15 itens saíram certos, a soma bateu com o total, e o item restante (total certo, peso e preço errados) ficou destacado para conferir. O texto desse OCR, anonimizado, é a fixture `packages/foto/test/fixtures/hortifruti-ocr-real.txt`.
+**Resultado com um cupom real de verdurão** (16 itens, foto sobre a mesa). Em três versões da foto (a original do WhatsApp, a mesma em resolução de câmera e inclinada 3°):
+- todos os 16 totais saíram certos;
+- o total do cupom saiu certo;
+- 13 ou 14 itens saíram completos (peso, preço e total).
+
+Os demais ficaram destacados, com peso e preço em branco ou para conferir. Os textos desses OCRs, anonimizados, são as fixtures em `packages/foto/test/fixtures/`.
 
 ### Limitações e próximos passos
 

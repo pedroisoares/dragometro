@@ -119,10 +119,10 @@ export function RevisarCupom({
       )}
       {fotoUri && verFoto && <Image source={{ uri: fotoUri }} style={estilos.foto} resizeMode="contain" />}
 
-      <Campo rotulo="Loja" valor={loja} aoMudar={setLoja} />
-      {lojaConhecida && <Text style={estilos.suave}>Mesma loja de compras anteriores.</Text>}
+      <Campo rotulo="Loja (toque para corrigir o nome)" valor={loja} aoMudar={setLoja} />
+      {lojaConhecida && <Text style={estilos.suave}>Reconhecida como a mesma loja de compras anteriores.</Text>}
       <View style={estilos.linha}>
-        <Campo rotulo="Data e hora" valor={data} aoMudar={setData} placeholder="dd/mm/aaaa hh:mm" flex={3} erro={!dataIso} />
+        <Campo rotulo="Data e hora" valor={data} aoMudar={setData} placeholder="dd/mm/aaaa hh:mm:ss" flex={3} erro={!dataIso} />
         <Campo rotulo="Total do cupom" valor={total} aoMudar={(t) => { setTotal(t); setConfirmarDiferenca(false); }} teclado="decimal-pad" flex={2} />
       </View>
 
@@ -206,17 +206,23 @@ function CartaoItem({
         </Pressable>
       </View>
       <View style={[estilos.linha, { alignItems: 'center' }]}>
-        <TextInput style={[estilos.campo, estilos.numero]} value={item.quantidade} onChangeText={(quantidade) => aoMudar({ quantidade })} keyboardType="decimal-pad" />
+        <TextInput style={[estilos.campo, estilos.numero]} value={item.quantidade} onChangeText={(quantidade) => aoMudar({ quantidade })} keyboardType="decimal-pad" placeholder={item.unidade === 'KG' ? 'peso' : 'qtd'} placeholderTextColor={cores.dragao} />
         <Pressable onPress={() => aoMudar({ unidade: item.unidade === 'KG' ? 'UN' : 'KG' })} hitSlop={6}>
           <Text style={estilos.unidade}>{item.unidade}</Text>
         </Pressable>
         <Text style={estilos.suave}>×</Text>
-        <TextInput style={[estilos.campo, estilos.numero]} value={item.valorUnitario} onChangeText={(valorUnitario) => aoMudar({ valorUnitario })} keyboardType="decimal-pad" />
+        <TextInput style={[estilos.campo, estilos.numero]} value={item.valorUnitario} onChangeText={(valorUnitario) => aoMudar({ valorUnitario })} keyboardType="decimal-pad" placeholder="preço" placeholderTextColor={cores.dragao} />
         <Text style={estilos.suave}>=</Text>
-        <TextInput style={[estilos.campo, estilos.numero, { fontWeight: '700' }]} value={item.valorTotal} onChangeText={(valorTotal) => aoMudar({ valorTotal })} keyboardType="decimal-pad" />
+        <TextInput style={[estilos.campo, estilos.numero, { fontWeight: '700' }]} value={item.valorTotal} onChangeText={(valorTotal) => aoMudar({ valorTotal })} keyboardType="decimal-pad" placeholder="total" placeholderTextColor={cores.dragao} />
       </View>
       <Text style={[estilos.situacao, { color: cor }]}>
-        {situacao === 'ok' ? '✓ confere' : situacao === 'ajustado' ? '✓ corrigido pela conta, vale uma olhada' : '⚠ confira com o cupom'}
+        {situacao === 'ok'
+          ? '✓ confere'
+          : situacao === 'ajustado'
+            ? '✓ corrigido pela conta, vale uma olhada'
+            : item.quantidade && item.valorUnitario
+              ? '⚠ confira com o cupom'
+              : '⚠ não deu para ler: complete com o cupom'}
       </Text>
     </View>
   );
@@ -243,7 +249,7 @@ function Campo({
     <View style={{ flex, gap: espaco(0.5) }}>
       <Text style={estilos.suave}>{rotulo}</Text>
       <TextInput
-        style={[estilos.campo, erro && { borderColor: cores.dragao, borderWidth: 1 }]}
+        style={[estilos.campo, estilos.campoSolto, erro && { borderColor: cores.dragao }]}
         value={valor}
         onChangeText={aoMudar}
         placeholder={placeholder}
@@ -278,11 +284,11 @@ function quantidadeTexto(v: number, unidade: UnidadeFoto): string {
   return (unidade === 'UN' && Number.isInteger(v) ? String(v) : v.toFixed(3)).replace('.', ',');
 }
 
-/** "2026-11-07T10:09:58" → "07/11/2026 10:09" */
+/** "2026-11-07T10:09:58" → "07/11/2026 10:09:58" (os segundos ajudam a não duplicar o cupom). */
 function isoParaTexto(iso: string): string {
   const [d, h] = iso.split('T');
   const [a, m, dia] = d!.split('-');
-  return `${dia}/${m}/${a}${h ? ` ${h.slice(0, 5)}` : ''}`;
+  return `${dia}/${m}/${a}${h ? ` ${h.slice(0, 8)}` : ''}`;
 }
 
 /** "07/11/2026 10:09" → "2026-11-07T10:09:00"; inválida → undefined */
@@ -307,6 +313,7 @@ const estilos = StyleSheet.create({
   linha: { flexDirection: 'row', gap: espaco(1) },
   soma: { borderWidth: 1, borderRadius: 12, padding: espaco(1.5) },
   cartao: { backgroundColor: cores.cartao, borderRadius: 12, padding: espaco(1.5), gap: espaco(1), borderWidth: 1, borderColor: 'transparent' },
+  campoSolto: { backgroundColor: cores.cartao, borderWidth: 1, borderColor: cores.textoSuave, paddingVertical: espaco(1.25) },
   campo: { color: cores.texto, backgroundColor: cores.fundo, borderRadius: 8, paddingHorizontal: espaco(1), paddingVertical: espaco(0.75), fontSize: 15 },
   numero: { flex: 1, textAlign: 'right', fontVariant: ['tabular-nums'], minWidth: 0 },
   unidade: { color: cores.dragao, fontWeight: '700', fontSize: 13, minWidth: 22 },

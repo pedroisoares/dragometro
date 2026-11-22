@@ -35,7 +35,8 @@ export default function Layout() {
         >
           <Stack.Screen name="index" options={{ title: 'Dragômetro' }} />
           <Stack.Screen name="ler-cupom" options={{ title: 'Ler cupom fiscal' }} />
-          <Stack.Screen name="compras" options={{ title: 'Minhas compras' }} />
+          <Stack.Screen name="compras/index" options={{ title: 'Minhas compras' }} />
+          <Stack.Screen name="compras/[chave]" options={{ title: 'Cupom' }} />
           <Stack.Screen name="produtos/index" options={{ title: 'Produtos' }} />
           <Stack.Screen name="produtos/[id]" options={{ title: 'Produto' }} />
           <Stack.Screen name="inflacao" options={{ title: 'Minha inflação' }} />
