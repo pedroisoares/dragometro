@@ -29,6 +29,9 @@ describe('itens reais dos cupons de SP', () => {
     // Supermercado
     ['PRES COZ SADIA S CP BAND KG', 'Presunto'],
     ['QJ M FRESC BANDEIRA PT KG', 'Queijo'],
+    ['MINAS FRESCAL BONANI', 'Queijo'],
+    ['LIMAO TAHITI', 'Limão'],
+    ['MAMAO FORMOSA', 'Mamão'],
     ['PAO FRANCES KG', 'Pão francês'],
     ['QJ PRATO MONTE CASTELO GRAN KG', 'Queijo'],
     ['CR DEN COLGATE MPA MEN 120', 'Produto para higiene bucal'],

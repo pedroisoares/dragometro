@@ -45,6 +45,9 @@ importers:
         specifier: ^4.23.15
         version: 4.23.15
     devDependencies:
+      '@dragometro/foto':
+        specifier: workspace:*
+        version: link:../../packages/foto
       '@types/node':
         specifier: ^22.20.5
         version: 22.20.5
@@ -66,6 +69,9 @@ importers:
       '@dragometro/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@dragometro/foto':
+        specifier: workspace:*
+        version: link:../../packages/foto
       '@dragometro/ibge':
         specifier: workspace:*
         version: link:../../packages/ibge
@@ -139,6 +145,9 @@ importers:
       '@dragometro/core':
         specifier: workspace:*
         version: link:../core
+      '@dragometro/foto':
+        specifier: workspace:*
+        version: link:../foto
       '@dragometro/sefaz':
         specifier: workspace:*
         version: link:../sefaz
@@ -170,6 +179,18 @@ importers:
       vitest:
         specifier: ^5.1.0
         version: 5.1.0(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15))
+
+  packages/foto:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.5
+        version: 22.20.5
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@types/node@22.20.5)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15))
 
   packages/ibge:
     devDependencies:

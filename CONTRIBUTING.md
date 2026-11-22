@@ -42,6 +42,14 @@ Para cupons sem QR Code, o app lê a chave de acesso pela foto e abre a página 
 2. Acrescente o estado em `URL_CONSULTA_POR_CHAVE`, em `packages/sefaz/src/texto.ts`.
 3. Teste no celular: a página deve abrir com a chave preenchida e, depois do captcha, o app deve salvar o cupom.
 
+## Ensinar o app a ler outro layout de cupom (foto)
+
+Cupons sem QR Code e sem chave são lidos pelo texto do OCR (`packages/foto`, veja `docs/ocr.md`). Se um cupom seu não for bem lido:
+
+1. Pegue o texto que o OCR devolveu (`POST /ocr` na API) e **troque nome da loja, endereço, telefone, CNPJ, número, data e nomes de pessoas** por fictícios. Nunca suba a foto original nem CPF.
+2. Salve como fixture em `packages/foto/test/fixtures/` e escreva o teste com os valores certos.
+3. Ajuste `lerCupomDoTexto` até o teste passar, sem quebrar os outros.
+
 ## Ensinar o app a reconhecer produtos
 
 Quando um produto aparece como "Sem categoria", dá para ensinar o app em dois passos:

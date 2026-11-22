@@ -14,7 +14,7 @@ export interface BancoSQL {
 
 import { classificar } from '@dragometro/classificacao';
 
-const VERSAO_ATUAL = 2;
+const VERSAO_ATUAL = 3;
 
 /** Esquema da versão 1 (exportado só para os testes de migração). */
 export const ESQUEMA_V1 = `
@@ -75,6 +75,11 @@ export async function migrar(db: BancoSQL): Promise<void> {
         const cat = classificar(item.descricao);
         if (cat) await db.runAsync('UPDATE itens SET subitem = ? WHERE id = ?', [cat.codigo, item.id]);
       }
+    }
+    if (versao < 3) {
+      // v3: de onde veio a nota. 'sefaz' (QR Code ou chave) ou 'foto' (itens lidos da foto,
+      // com chave criada pelo app e loja identificada pelo nome quando não há CNPJ).
+      await db.execAsync(`ALTER TABLE notas ADD COLUMN origem TEXT NOT NULL DEFAULT 'sefaz';`);
     }
     await db.execAsync(`PRAGMA user_version = ${VERSAO_ATUAL}`);
   });

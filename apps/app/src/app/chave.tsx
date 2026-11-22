@@ -1,4 +1,5 @@
-import { salvarNota, type ResultadoSalvar } from '@dragometro/armazenamento';
+import { salvarCupomFoto, salvarNota, type ResultadoSalvar } from '@dragometro/armazenamento';
+import { lerCupomDoTexto, type CupomFoto } from '@dragometro/foto';
 import {
   chaveValida,
   chavesNoTexto,
@@ -6,7 +7,6 @@ import {
   lerChave,
   lerNotaDaPagina,
   urlConsultaPorChave,
-  type NotaFiscal,
 } from '@dragometro/sefaz';
 import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,6 +17,7 @@ import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet
 import { dataCurta, reais } from '../lib/formato';
 import { motorOcr } from '../lib/ocr';
 import { PaginaSefazVisivel } from '../lib/PaginaSefazVisivel';
+import { RevisarCupom } from '../lib/RevisarCupom';
 import { cores, espaco } from '../tema';
 
 type Estado =
@@ -24,12 +25,14 @@ type Estado =
   | { tipo: 'lendo-foto' }
   | { tipo: 'confirmar'; digitos: string; textoOcr: string; aviso?: string }
   | { tipo: 'sefaz'; chave: string; url: string }
-  | { tipo: 'pronto'; nota: NotaFiscal; resultado: ResultadoSalvar }
+  | { tipo: 'revisar'; cupom: CupomFoto; textoOcr: string; fotoUri?: string }
+  | { tipo: 'pronto'; loja: string; data?: string; itens: number; total?: number; resultado: ResultadoSalvar }
   | { tipo: 'erro'; mensagem: string };
 
 /**
- * Cupom sem QR Code legível: lê a chave de acesso pela foto (OCR) ou digitada,
- * e consulta a nota na SEFAZ. A consulta pela chave pede um captcha, que a pessoa resolve.
+ * Cupom sem QR Code legível. Pela foto (OCR):
+ * - se achar a chave de acesso, consulta a nota na SEFAZ (a pessoa resolve o captcha);
+ * - se o cupom não tiver chave, lê os itens da foto e mostra para a pessoa conferir antes de salvar.
  */
 export default function LerPelaChave() {
   const db = useSQLiteContext();
@@ -46,15 +49,20 @@ export default function LerPelaChave() {
     }
     const resultado =
       origem === 'camera' ? await ImagePicker.launchCameraAsync(opcoes) : await ImagePicker.launchImageLibraryAsync(opcoes);
-    const base64 = resultado.canceled ? undefined : resultado.assets[0]?.base64;
+    const foto = resultado.canceled ? undefined : resultado.assets[0];
+    const base64 = foto?.base64;
     if (!base64) return;
 
     setEstado({ tipo: 'lendo-foto' });
     try {
       const texto = await motorOcr.reconhecer({ base64 });
       const [chave] = chavesNoTexto(texto);
+      const cupom = lerCupomDoTexto(texto);
       if (chave) {
         setEstado({ tipo: 'confirmar', digitos: chave.chave, textoOcr: texto });
+      } else if (cupom.itens.length > 0) {
+        // Sem chave: lê os itens da foto, para conferir.
+        setEstado({ tipo: 'revisar', cupom, textoOcr: texto, fotoUri: foto.uri });
       } else {
         setEstado({
           tipo: 'confirmar',
@@ -73,7 +81,15 @@ export default function LerPelaChave() {
   async function aoReceberHtml(html: string, chave: string) {
     try {
       const nota = lerNotaDaPagina(html, chave);
-      setEstado({ tipo: 'pronto', nota, resultado: await salvarNota(db, nota) });
+      const resultado = await salvarNota(db, nota);
+      setEstado({
+        tipo: 'pronto',
+        loja: nota.emitente.nome ?? nota.emitente.cnpj,
+        ...(nota.dataEmissao ? { data: nota.dataEmissao } : {}),
+        itens: nota.itens.length,
+        ...(nota.valorTotal !== undefined ? { total: nota.valorTotal } : {}),
+        resultado,
+      });
     } catch (e) {
       setEstado({ tipo: 'erro', mensagem: e instanceof Error ? e.message : String(e) });
     }
@@ -119,17 +135,40 @@ export default function LerPelaChave() {
     );
   }
 
+  if (estado.tipo === 'revisar') {
+    const { textoOcr } = estado;
+    return (
+      <RevisarCupom
+        cupom={estado.cupom}
+        {...(estado.fotoUri ? { fotoUri: estado.fotoUri } : {})}
+        aoDigitarChave={() => setEstado({ tipo: 'confirmar', digitos: digitosProvaveisDaChave(textoOcr) ?? '', textoOcr })}
+        aoSalvar={async (cupom) => {
+          const resultado = await salvarCupomFoto(db, cupom);
+          setEstado({
+            tipo: 'pronto',
+            loja: cupom.loja.nome,
+            data: cupom.dataEmissao,
+            itens: cupom.itens.length,
+            ...(cupom.valorTotal !== undefined ? { total: cupom.valorTotal } : {}),
+            resultado,
+          });
+        }}
+      />
+    );
+  }
+
   if (estado.tipo === 'pronto') {
-    const { nota, resultado } = estado;
+    const { resultado } = estado;
     return (
       <View style={estilos.centro}>
         <Text style={[estilos.titulo, { color: resultado === 'nova' ? cores.verde : cores.textoSuave }]}>
           {resultado === 'nova' ? '✓ Cupom salvo nas suas compras' : 'Este cupom já estava salvo'}
         </Text>
-        <Text style={estilos.texto}>{nota.emitente.nome ?? nota.emitente.cnpj}</Text>
+        <Text style={estilos.texto}>{estado.loja}</Text>
         <Text style={estilos.suave}>
-          {nota.dataEmissao ? dataCurta(nota.dataEmissao) : ''} · {nota.itens.length} itens
-          {nota.valorTotal !== undefined ? ` · ${reais(nota.valorTotal)}` : ''}
+          {estado.data ? `${dataCurta(estado.data)} · ` : ''}
+          {estado.itens} itens
+          {estado.total !== undefined ? ` · ${reais(estado.total)}` : ''}
         </Text>
         <Botao texto="Ler outro cupom" onPress={() => setEstado({ tipo: 'escolher' })} />
         <Link href="/produtos" asChild>
@@ -150,8 +189,9 @@ export default function LerPelaChave() {
     <ScrollView contentContainerStyle={estilos.tela}>
       <Text style={estilos.titulo}>Cupom sem QR Code?</Text>
       <Text style={estilos.texto}>
-        Quase todo cupom tem a <Text style={{ fontWeight: '700' }}>chave de acesso</Text>: 44 números, em grupos de 4,
-        perto do rodapé. Tire uma foto dela que o app lê os números e consulta a nota na SEFAZ.
+        Tire uma foto do cupom inteiro. Se ele tiver a <Text style={{ fontWeight: '700' }}>chave de acesso</Text> (44
+        números, em grupos de 4, perto do rodapé), o app consulta a nota na SEFAZ. Se não tiver, o app lê os itens da
+        foto e você confere antes de salvar.
       </Text>
       {Platform.OS !== 'web' && <Botao texto="Tirar foto do cupom" onPress={() => usarFoto('camera')} />}
       <Botao
@@ -165,7 +205,7 @@ export default function LerPelaChave() {
         onPress={() => setEstado({ tipo: 'confirmar', digitos: '', textoOcr: '' })}
       />
       <Text style={estilos.suave}>
-        Dica: foto de perto, com boa luz e com os 44 números inteiros aparecendo. Vale foto recebida pelo WhatsApp.
+        Dica: cupom esticado, foto de cima, com boa luz e sem cortar as bordas. Vale foto recebida pelo WhatsApp.
       </Text>
     </ScrollView>
   );
