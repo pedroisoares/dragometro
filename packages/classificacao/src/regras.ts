@@ -49,7 +49,7 @@ export const REGRAS: readonly (readonly [subitem: string, padrao: RegExp])[] = [
   ['1111019', /\b(IOG(URTE)?|BEB(IDA)? LACT(EA)?|DANONE|DANONINHO|NESTON|PETIT SUISSE)\b/],
   ['1111021', /\b(REQ(UEIJAO)?|CATUPIRY)\b/],
   ['1111031', /\bMANT(EIGA)?\b/],
-  ['1111011', /\b(QJ|QUEIJO|QJO|MUSS(ARELA)?|MUCARELA|PARMESAO|PROVOLONE|RICOTA)\b/],
+  ['1111011', /\b(QJ|QUEIJO|QJO|MUSS(ARELA)?|MUCARELA|PARMESAO|PROVOLONE|RICOTA|MINAS FRESCAL|MINAS PADRAO|FRESCAL)\b/],
   ['1116001', /\bLEITE (DE )?COCO\b/],
   // Creme de leite não tem subitem próprio no IPCA: fica sem categoria (regra só para não cair em "leite").
   ['', /\b(CR(EME)? (DE )?LEITE)\b/],

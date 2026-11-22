@@ -35,7 +35,7 @@ export default function Compras() {
           <View style={{ flex: 1 }}>
             <Text style={estilos.titulo}>{item.nomeEmitente ?? 'Loja'}</Text>
             <Text style={estilos.suave}>
-              {dataCurta(item.dataEmissao)} · {item.quantidadeItens} itens
+              {dataCurta(item.dataEmissao)} · {item.quantidadeItens} itens{item.origem === 'foto' ? ' · lido da foto' : ''}
               {item.valorTotal !== null ? ` · ${reais(item.valorTotal)}` : ''}
             </Text>
           </View>

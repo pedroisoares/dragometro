@@ -160,7 +160,10 @@ O celular e o computador precisam estar **na mesma rede Wi-Fi**.
 
 Toque em **Ler QR Code do cupom**, permita o uso da câmera e aponte para o QR Code no rodapé do cupom fiscal.
 
-**Cupom sem QR Code (ou com QR Code apagado):** na mesma tela, toque em **"Cupom sem QR Code? Use a foto da chave de acesso"**. O app lê os 44 números da chave pela foto e abre a consulta da SEFAZ já preenchida. Você só digita o captcha e toca em Consultar.
+**Cupom sem QR Code (ou com QR Code apagado):** na mesma tela, toque em **"Cupom sem QR Code? Use a foto do cupom"** e fotografe o cupom inteiro, esticado, de cima e com boa luz.
+
+- **Com chave de acesso** (44 números perto do rodapé): o app abre a consulta da SEFAZ já preenchida. Você só digita o captcha e toca em Consultar.
+- **Sem chave** (verdurões, feiras, caixas antigos): o app lê loja, data e itens da foto e mostra tudo para você conferir. Os itens em que a conta não fecha ficam destacados em laranja, e dá para abrir a foto para comparar. Corrija o que precisar e toque em **Salvar cupom**. Isso funciona também na versão Web.
 
 Ler fotos usa a **API**, então deixe o `pnpm api` rodando num segundo terminal. Não precisa mudar o `.env`: no celular, o app troca `localhost` pelo IP do computador sozinho. Se o Firewall do Windows perguntar sobre o Node.js na porta 3333, permita em redes privadas.
 

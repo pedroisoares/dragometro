@@ -168,7 +168,7 @@ export default function LerCupom() {
 
       <Link href="/chave" asChild>
         <Pressable style={estilos.semQr}>
-          <Text style={{ color: cores.dragao, fontWeight: '600' }}>Cupom sem QR Code? Use a foto da chave de acesso</Text>
+          <Text style={{ color: cores.dragao, fontWeight: '600' }}>Cupom sem QR Code? Use a foto do cupom</Text>
         </Pressable>
       </Link>
 

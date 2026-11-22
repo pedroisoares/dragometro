@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { lerCupomDoTexto, somaDosItens } from '@dragometro/foto';
 import { describe, expect, it } from 'vitest';
 import { chavesNoTexto, urlConsultaNoTexto } from '@dragometro/sefaz';
 import { criarApp } from '../src/app';
@@ -80,6 +81,30 @@ describe('API', () => {
     const { texto } = r.json() as { texto: string };
     expect(chavesNoTexto(texto).map((c) => c.chave)).toEqual(['35261143259548002298652260000291801000000007']);
     expect(urlConsultaNoTexto(texto)).toBe('https://www.nfce.fazenda.sp.gov.br/consulta');
+    await app.close();
+  });
+
+  it('lê os itens da foto de um cupom sem chave (OCR + leitor de itens)', { timeout: 60_000 }, async () => {
+    const app = await criarApp();
+    // Cupom fictício, fotografado torto sobre uma mesa, com luz desigual.
+    const imagem = readFileSync(new URL('./fixtures/cupom-sem-chave-sintetico.png', import.meta.url));
+    const r = await app.inject({ method: 'POST', url: '/ocr', payload: { imagemBase64: imagem.toString('base64') } });
+    expect(r.statusCode).toBe(200);
+    const cupom = lerCupomDoTexto((r.json() as { texto: string }).texto);
+    expect(cupom.loja.nome).toBe('HORTIFRUTI SOL NASCENTE');
+    expect(cupom.dataEmissao).toBe('2026-11-21T08:41:07');
+    expect(cupom.numero).toBe('0007788');
+    expect(cupom.valorTotal).toBe(51.03);
+    expect(cupom.itens.map((i) => [i.descricao, i.quantidade, i.valorUnitario, i.valorTotal])).toEqual([
+      ['BATATA LAVADA', 1.235, 5.98, 7.39],
+      ['ALFACE CRESPA UND', 1, 3.5, 3.5],
+      ['CENOURA', 0.64, 6.49, 4.15],
+      ['BANANA NANICA', 1.81, 5.49, 9.94],
+      ['COUVE MANTEIGA MACO', 1, 4, 4],
+      ['TOMATE ITALIANO', 0.915, 9.98, 9.13],
+      ['MELANCIA', 4.32, 2.99, 12.92],
+    ]);
+    expect(somaDosItens(cupom.itens)).toBe(51.03);
     await app.close();
   });
 

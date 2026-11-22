@@ -17,6 +17,7 @@
   "dependencies": {
     "@dragometro/classificacao": "workspace:*",
     "@dragometro/core": "workspace:*",
+    "@dragometro/foto": "workspace:*",
     "@dragometro/sefaz": "workspace:*"
   },
   "devDependencies": {

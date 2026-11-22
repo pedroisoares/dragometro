@@ -1,5 +1,6 @@
 import { classificar } from '@dragometro/classificacao';
 import { lerUnidadeCupom, type ItemComprado } from '@dragometro/core';
+import { chaveDeComparacao, maisParecido, somaDosItens } from '@dragometro/foto';
 import { lerChave, type ItemNota, type NotaFiscal } from '@dragometro/sefaz';
 import type { BancoSQL } from './banco';
 
@@ -56,6 +57,98 @@ export async function salvarNota(
   return resultado;
 }
 
+/** Um cupom lido pela foto e revisado pela pessoa, pronto para salvar. */
+export interface CupomParaSalvar {
+  loja: { nome: string; cnpj?: string };
+  numero?: string;
+  /** ISO local: `2026-11-07T10:09:58` ou `2026-11-07`. */
+  dataEmissao: string;
+  valorTotal?: number;
+  itens: { descricao: string; quantidade: number; unidade: string; valorUnitario: number; valorTotal: number }[];
+}
+
+export interface LojaGuardada {
+  /** CNPJ, ou `loja:NOME` para lojas sem CNPJ no cupom. */
+  id: string;
+  nome: string;
+}
+
+/**
+ * A loja de um cupom lido pela foto. Com CNPJ, é o CNPJ. Sem CNPJ, procura uma loja já
+ * guardada com nome parecido (o OCR pode ler "NASCENTF" numa semana e "NASCENTE" na outra);
+ * se não houver, cria `loja:NOME`.
+ */
+export async function acharLoja(db: BancoSQL, nome: string, cnpj?: string): Promise<LojaGuardada> {
+  const lojas = await db.getAllAsync<{ id: string; nome: string | null }>(
+    `SELECT cnpj_emitente AS id, MAX(nome_emitente) AS nome FROM notas GROUP BY cnpj_emitente`,
+    [],
+  );
+  if (cnpj) {
+    const mesma = lojas.find((l) => l.id === cnpj);
+    return { id: cnpj, nome: mesma?.nome ?? nome };
+  }
+  const parecida = maisParecido(nome, lojas.filter((l) => l.nome), (l) => l.nome!);
+  if (parecida) return { id: parecida.id, nome: parecida.nome! };
+  return { id: `loja:${chaveDeComparacao(nome)}`, nome };
+}
+
+/**
+ * Salva um cupom lido pela foto. A chave é criada pelo app (loja, data, número e total),
+ * então o mesmo cupom fotografado de novo não é gravado duas vezes. Itens com descrição
+ * parecida com a de um produto já comprado na mesma loja entram como o MESMO produto,
+ * para a variação de preço funcionar semana a semana.
+ */
+export async function salvarCupomFoto(
+  db: BancoSQL,
+  cupom: CupomParaSalvar,
+  lidaEm: string = new Date().toISOString(),
+): Promise<ResultadoSalvar> {
+  const loja = await acharLoja(db, cupom.loja.nome, cupom.loja.cnpj);
+  const total = cupom.valorTotal ?? somaDosItens(cupom.itens);
+  const chave = `foto:${loja.id}|${cupom.dataEmissao}|${cupom.numero ?? ''}|${total.toFixed(2)}`;
+  const produtos = await db.getAllAsync<{ produtoId: string; descricao: string }>(
+    `SELECT i.produto_id AS produtoId, MAX(i.descricao) AS descricao
+       FROM itens i JOIN notas n ON n.chave = i.chave_nota
+      WHERE n.cnpj_emitente = ?
+      GROUP BY i.produto_id`,
+    [loja.id],
+  );
+  let resultado: ResultadoSalvar = 'repetida';
+
+  await db.withTransactionAsync(async () => {
+    const { changes } = await db.runAsync(
+      `INSERT OR IGNORE INTO notas (chave, uf, cnpj_emitente, nome_emitente, data_emissao, valor_total, lida_em, origem)
+       VALUES (?, '', ?, ?, ?, ?, ?, 'foto')`,
+      [chave, loja.id, loja.nome, cupom.dataEmissao, total, lidaEm],
+    );
+    if (changes === 0) return;
+
+    resultado = 'nova';
+    for (const [ordem, item] of cupom.itens.entries()) {
+      const descricao = item.descricao.trim().toUpperCase().replace(/\s+/g, ' ');
+      const mesmo = maisParecido(descricao, produtos, (p) => p.descricao);
+      const produtoId = mesmo?.produtoId ?? `${loja.id}:${chaveDeComparacao(descricao)}`;
+      if (!mesmo) produtos.push({ produtoId, descricao });
+      await db.runAsync(
+        `INSERT INTO itens (chave_nota, ordem, produto_id, codigo, descricao, quantidade, unidade, valor_unitario, valor_total, subitem)
+         VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)`,
+        [
+          chave,
+          ordem + 1,
+          produtoId,
+          descricao,
+          item.quantidade,
+          item.unidade,
+          item.valorUnitario,
+          item.valorTotal,
+          classificar(descricao)?.codigo ?? null,
+        ],
+      );
+    }
+  });
+  return resultado;
+}
+
 export async function excluirNota(db: BancoSQL, chave: string): Promise<void> {
   await db.runAsync('DELETE FROM notas WHERE chave = ?', [chave]);
 }
@@ -66,13 +159,15 @@ export interface ResumoNota {
   dataEmissao: string;
   valorTotal: number | null;
   quantidadeItens: number;
+  /** 'sefaz' (QR Code ou chave de acesso) ou 'foto' (itens lidos da foto). */
+  origem: 'sefaz' | 'foto';
 }
 
 /** Notas guardadas, da mais recente para a mais antiga. */
 export async function listarNotas(db: BancoSQL): Promise<ResumoNota[]> {
   return db.getAllAsync<ResumoNota>(
     `SELECT n.chave, n.nome_emitente AS nomeEmitente, n.data_emissao AS dataEmissao,
-            n.valor_total AS valorTotal, COUNT(i.id) AS quantidadeItens
+            n.valor_total AS valorTotal, COUNT(i.id) AS quantidadeItens, n.origem
        FROM notas n LEFT JOIN itens i ON i.chave_nota = n.chave
       GROUP BY n.chave
       ORDER BY n.data_emissao DESC`,

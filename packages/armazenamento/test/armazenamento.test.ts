@@ -11,7 +11,9 @@ import {
   listarNotas,
   listarProdutos,
   migrar,
+  salvarCupomFoto,
   salvarNota,
+  type CupomParaSalvar,
   type BancoSQL,
 } from '../src';
 import { bancoEmMemoria } from './banco-node';
@@ -32,7 +34,7 @@ describe('migrações', () => {
   it('cria o esquema e pode rodar de novo sem erro', async () => {
     await migrar(db);
     const v = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version', []);
-    expect(v?.user_version).toBe(2);
+    expect(v?.user_version).toBe(3);
   });
 
   it('atualiza um banco da versão 1 classificando os itens já guardados', async () => {
@@ -139,5 +141,56 @@ describe('categorias do IPCA', () => {
     expect(Math.round(gastos.reduce((s, g) => s + g.gasto, 0) * 100) / 100).toBe(944.05);
     // Sem categoria: batata palha e creme de leite
     expect(gastos.find((g) => g.subitem === null)!.itens).toBe(2);
+  });
+});
+
+describe('cupons lidos pela foto', () => {
+  const semana1: CupomParaSalvar = {
+    loja: { nome: 'VERDURAO EXEMPLO' },
+    numero: '0004521',
+    dataEmissao: '2026-11-07T10:09:58',
+    valorTotal: 17.81,
+    itens: [
+      { descricao: 'TOMATE MEDIO', quantidade: 0.685, unidade: 'KG', valorUnitario: 18.9, valorTotal: 12.95 },
+      { descricao: 'ACELGA UND', quantidade: 1, unidade: 'UN', valorUnitario: 4.86, valorTotal: 4.86 },
+    ],
+  };
+  // Na semana seguinte o OCR leu o nome da loja e a acelga um pouco diferente.
+  const semana2: CupomParaSalvar = {
+    loja: { nome: 'VERDURÃO EXEMPL0' },
+    numero: '0004987',
+    dataEmissao: '2026-11-14T09:30:00',
+    valorTotal: 19.54,
+    itens: [
+      { descricao: 'TOMATE MEDIO', quantidade: 0.7, unidade: 'KG', valorUnitario: 19.9, valorTotal: 13.93 },
+      { descricao: 'ACEL GA UND', quantidade: 1, unidade: 'UN', valorUnitario: 5.61, valorTotal: 5.61 },
+    ],
+  };
+
+  it('salva sem chave nem CNPJ, sem repetir o mesmo cupom', async () => {
+    expect(await salvarCupomFoto(db, semana1)).toBe('nova');
+    expect(await salvarCupomFoto(db, semana1)).toBe('repetida');
+    const [nota] = await listarNotas(db);
+    expect(nota).toMatchObject({ nomeEmitente: 'VERDURAO EXEMPLO', origem: 'foto', quantidadeItens: 2, valorTotal: 17.81 });
+    expect(nota!.chave).toMatch(/^foto:loja:VERDURAOEXEMPLO\|/);
+  });
+
+  it('junta a mesma loja e os mesmos produtos entre semanas, mesmo com o OCR diferente', async () => {
+    await salvarCupomFoto(db, semana1);
+    await salvarCupomFoto(db, semana2);
+    const produtos = await listarProdutos(db);
+    expect(produtos).toHaveLength(2);
+    expect(produtos.every((p) => p.compras === 2 && p.nomeEmitente === 'VERDURAO EXEMPLO')).toBe(true);
+
+    const tomate = produtos.find((p) => p.descricao === 'TOMATE MEDIO')!;
+    expect(tomate.subitem).toBe('1103028'); // Tomate
+    const obs = observacoesDeItens(await itensComprados(db, tomate.produtoId));
+    expect(obs.map((o) => o.preco)).toEqual([18.9, 19.9]);
+  });
+
+  it('notas da SEFAZ continuam com origem sefaz', async () => {
+    await salvarNota(db, acougue);
+    const [nota] = await listarNotas(db);
+    expect(nota!.origem).toBe('sefaz');
   });
 });
