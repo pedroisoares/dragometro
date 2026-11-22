@@ -5,6 +5,7 @@ import type { NotaFiscal } from './tipos';
 export * from './tipos';
 export * from './chave';
 export * from './numeros';
+export * from './texto';
 export { ErroSemItens, estadoValidado, leitorPara, layoutPadrao } from './leitores';
 
 /** Extrai a nota a partir do HTML da página de consulta, escolhendo o leitor pela UF da chave. */

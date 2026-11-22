@@ -160,6 +160,10 @@ O celular e o computador precisam estar **na mesma rede Wi-Fi**.
 
 Toque em **Ler QR Code do cupom**, permita o uso da câmera e aponte para o QR Code no rodapé do cupom fiscal.
 
+**Cupom sem QR Code (ou com QR Code apagado):** na mesma tela, toque em **"Cupom sem QR Code? Use a foto da chave de acesso"**. O app lê os 44 números da chave pela foto e abre a consulta da SEFAZ já preenchida. Você só digita o captcha e toca em Consultar.
+
+Ler fotos usa a **API**, então deixe o `pnpm api` rodando num segundo terminal. Não precisa mudar o `.env`: no celular, o app troca `localhost` pelo IP do computador sozinho. Se o Firewall do Windows perguntar sobre o Node.js na porta 3333, permita em redes privadas.
+
 Os cupons ficam guardados **no celular**.
 
 > **Android:** use o leitor **de dentro do Expo Go**. A câmera comum do Android e o Google Lens não sabem abrir esse QR Code e mostram "Não há aplicativos no seu celular que possam usar as informações desse QR Code".

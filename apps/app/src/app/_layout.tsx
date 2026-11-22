@@ -39,6 +39,7 @@ export default function Layout() {
           <Stack.Screen name="produtos/index" options={{ title: 'Produtos' }} />
           <Stack.Screen name="produtos/[id]" options={{ title: 'Produto' }} />
           <Stack.Screen name="inflacao" options={{ title: 'Minha inflação' }} />
+          <Stack.Screen name="chave" options={{ title: 'Cupom sem QR Code' }} />
         </Stack>
       </SQLiteProvider>
     </ErroBanco>

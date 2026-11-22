@@ -34,6 +34,14 @@ Escreva um teste em `packages/sefaz/test/<uf>.test.ts` usando `lerNotaDaPagina(h
 
 Conte no PR o estado, o mês do cupom e se o portal tinha alguma particularidade (captcha, página carregada por JavaScript, iframe...).
 
+## Consulta pela chave de acesso do seu estado
+
+Para cupons sem QR Code, o app lê a chave de acesso pela foto e abre a página de consulta da SEFAZ pela chave. Por enquanto só conhecemos a de SP. Para incluir o seu estado:
+
+1. Procure no rodapé de um cupom o texto "Consulte pela Chave de Acesso em ..." e anote o endereço.
+2. Acrescente o estado em `URL_CONSULTA_POR_CHAVE`, em `packages/sefaz/src/texto.ts`.
+3. Teste no celular: a página deve abrir com a chave preenchida e, depois do captcha, o app deve salvar o cupom.
+
 ## Ensinar o app a reconhecer produtos
 
 Quando um produto aparece como "Sem categoria", dá para ensinar o app em dois passos:

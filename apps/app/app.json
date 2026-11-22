@@ -43,6 +43,14 @@
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Dragômetro usa suas fotos para ler a chave de acesso do cupom fiscal.",
+          "cameraPermission": "O Dragômetro usa a câmera para fotografar o cupom fiscal.",
+          "microphonePermission": false
+        }
       ]
     ]
   }

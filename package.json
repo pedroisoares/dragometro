@@ -22,6 +22,9 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
+    ],
+    "ignoredBuiltDependencies": [
+      "tesseract.js"
     ]
   }
 }

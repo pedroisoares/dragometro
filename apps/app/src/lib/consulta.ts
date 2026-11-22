@@ -1,8 +1,7 @@
 import { consultarNota, type NotaFiscal } from '@dragometro/sefaz';
 import { Platform } from 'react-native';
+import { urlDaApi } from './api';
 
-/** Endereço da API do Dragômetro (apps/api). Configure em `.env`: EXPO_PUBLIC_API_URL=http://localhost:3333 */
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export type ResultadoBusca =
   | { tipo: 'nota'; nota: NotaFiscal }
@@ -27,10 +26,10 @@ export async function buscarNota(conteudoQr: string): Promise<ResultadoBusca> {
     }
   }
 
-  if (!API_URL) {
+  if (!urlDaApi()) {
     throw new Error('Na versão Web é preciso configurar EXPO_PUBLIC_API_URL para consultar a SEFAZ.');
   }
-  const resposta = await fetch(`${API_URL}/nfce?url=${encodeURIComponent(conteudoQr)}`);
+  const resposta = await fetch(`${urlDaApi()}/nfce?url=${encodeURIComponent(conteudoQr)}`);
   if (!resposta.ok) {
     const corpo = (await resposta.json().catch(() => null)) as { erro?: string } | null;
     throw new Error(corpo?.erro ?? `A API respondeu ${resposta.status}`);
