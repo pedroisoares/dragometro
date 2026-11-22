@@ -1,10 +1,10 @@
 import { variacaoMensal, variacaoMensalCategoria, type Indice } from '@dragometro/ibge';
 import { Platform } from 'react-native';
+import { urlDaApi } from './api';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 async function viaApi(caminho: string): Promise<Map<string, number>> {
-  const resposta = await fetch(`${API_URL}${caminho}`);
+  const resposta = await fetch(`${urlDaApi()}${caminho}`);
   if (!resposta.ok) throw new Error(`A API respondeu ${resposta.status}`);
   const { serie } = (await resposta.json()) as { serie: Record<string, number> };
   return new Map(Object.entries(serie));
@@ -15,7 +15,7 @@ async function viaApi(caminho: string): Promise<Map<string, number>> {
  * Na Web, quando a API está configurada, busca por ela (evita problemas de CORS com o IBGE).
  */
 export async function buscarIndice(indice: Indice, ultimos = 12): Promise<Map<string, number>> {
-  if (Platform.OS === 'web' && API_URL) return viaApi(`/indices/${indice}?ultimos=${ultimos}`);
+  if (Platform.OS === 'web' && urlDaApi()) return viaApi(`/indices/${indice}?ultimos=${ultimos}`);
   return variacaoMensal(indice, { ultimos });
 }
 
@@ -25,6 +25,6 @@ export async function buscarIndiceCategoria(
   codigoSidra: string,
   ultimos = 12,
 ): Promise<Map<string, number>> {
-  if (Platform.OS === 'web' && API_URL) return viaApi(`/indices/${indice}/categoria/${codigoSidra}?ultimos=${ultimos}`);
+  if (Platform.OS === 'web' && urlDaApi()) return viaApi(`/indices/${indice}/categoria/${codigoSidra}?ultimos=${ultimos}`);
   return variacaoMensalCategoria(indice, codigoSidra, { ultimos });
 }

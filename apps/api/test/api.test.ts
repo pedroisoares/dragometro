@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { chavesNoTexto, urlConsultaNoTexto } from '@dragometro/sefaz';
 import { criarApp } from '../src/app';
 
 const CHAVE = '35261112345678000195650010000123451876543215';
@@ -65,5 +66,26 @@ describe('API', () => {
     expect(r.json().serie['2026-10']).toBeCloseTo(-0.0067, 10);
     expect(urls[0]).toContain('/c315/12393');
     expect((await app.inject('/indices/IPCA/categoria/abc')).statusCode).toBe(400);
+  });
+
+  it('lê a chave de acesso da foto do cupom (OCR)', { timeout: 60_000 }, async () => {
+    const app = await criarApp();
+    const imagem = readFileSync(new URL('./fixtures/rodape-cupom-sintetico.png', import.meta.url));
+    const r = await app.inject({
+      method: 'POST',
+      url: '/ocr',
+      payload: { imagemBase64: imagem.toString('base64') },
+    });
+    expect(r.statusCode).toBe(200);
+    const { texto } = r.json() as { texto: string };
+    expect(chavesNoTexto(texto).map((c) => c.chave)).toEqual(['35261143259548002298652260000291801000000007']);
+    expect(urlConsultaNoTexto(texto)).toBe('https://www.nfce.fazenda.sp.gov.br/consulta');
+    await app.close();
+  });
+
+  it('recusa OCR sem imagem', async () => {
+    const app = await criarApp();
+    const r = await app.inject({ method: 'POST', url: '/ocr', payload: {} });
+    expect(r.statusCode).toBe(400);
   });
 });

@@ -166,6 +166,12 @@ export default function LerCupom() {
         </Pressable>
       </View>
 
+      <Link href="/chave" asChild>
+        <Pressable style={estilos.semQr}>
+          <Text style={{ color: cores.dragao, fontWeight: '600' }}>Cupom sem QR Code? Use a foto da chave de acesso</Text>
+        </Pressable>
+      </Link>
+
       {permissao?.granted ? (
         <View style={estilos.tela}>
           <CameraView
@@ -193,7 +199,8 @@ export default function LerCupom() {
 const estilos = StyleSheet.create({
   tela: { flex: 1 },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espaco(3), gap: espaco(2) },
-  colar: { flexDirection: 'row', gap: espaco(1), padding: espaco(2) },
+  colar: { flexDirection: 'row', gap: espaco(1), padding: espaco(2), paddingBottom: espaco(1) },
+  semQr: { paddingHorizontal: espaco(2), paddingBottom: espaco(1.5) },
   campo: {
     flex: 1,
     color: cores.texto,

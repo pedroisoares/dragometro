@@ -2,6 +2,7 @@ import cors from '@fastify/cors';
 import { subitens, variacaoMensal, variacaoMensalCategoria, type Indice } from '@dragometro/ibge';
 import { chaveDoQrCode, consultarNota } from '@dragometro/sefaz';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { encerrarOcr, reconhecerTexto } from './ocr';
 
 export interface OpcoesApp {
   /** Permite trocar o fetch nos testes. */
@@ -22,6 +23,26 @@ export async function criarApp({ fetchFn = fetch, logger = false }: OpcoesApp = 
   await app.register(cors, { origin: true });
 
   app.get('/health', async () => ({ ok: true }));
+  app.addHook('onClose', encerrarOcr);
+
+  // OCR da foto do cupom. Recebe a imagem em base64 (JPEG ou PNG) e devolve o texto.
+  // A imagem não é guardada.
+  app.post<{ Body: { imagemBase64?: string } }>(
+    '/ocr',
+    { bodyLimit: 15 * 1024 * 1024 },
+    async (req, reply) => {
+      const base64 = req.body?.imagemBase64?.replace(/^data:image\/\w+;base64,/, '');
+      if (!base64) return reply.code(400).send({ erro: 'Envie a imagem em imagemBase64' });
+      const imagem = Buffer.from(base64, 'base64');
+      if (imagem.length < 100) return reply.code(400).send({ erro: 'Imagem inválida' });
+      try {
+        return { texto: await reconhecerTexto(imagem) };
+      } catch (e) {
+        req.log.warn(e);
+        return reply.code(422).send({ erro: 'Não foi possível ler a imagem' });
+      }
+    },
+  );
 
   app.get<{ Querystring: { url?: string } }>('/nfce', async (req, reply) => {
     const url = req.query.url;
