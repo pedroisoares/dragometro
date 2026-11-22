@@ -249,9 +249,10 @@ function lerDetalhe(linha: string, maximos: Maximos): (Omit<ItemFoto, 'descricao
 
   const textoQtd = inicioNumerico(partes.quantidade);
   const digitosQtd = textoQtd.replace(/[\s,.]/g, '');
-  // Sem unidade legível: 4+ dígitos ou 3 casas é peso ("0345", "0,965"); senão, unidades.
+  // Sem unidade legível: 4+ dígitos ou 3 casas é peso ("0345", "0,965"); peso ilegível numa
+  // linha "quantidade X preço" também (itens por unidade costumam vir numa linha só); senão, unidades.
   const unidade: UnidadeFoto =
-    partes.unidade ?? (digitosQtd.length >= 4 || /[,.]\s*\S{3}$/.test(textoQtd) ? 'KG' : 'UN');
+    partes.unidade ?? (digitosQtd.length === 0 || digitosQtd.length >= 4 || /[,.]\s*\S{3}$/.test(textoQtd) ? 'KG' : 'UN');
   const q = textoQtd ? lerNumero(textoQtd, unidade === 'UN' ? 0 : 3) : undefined;
   const lido = lerNumero(partes.preco, 2);
   // Preço tem sempre 2 casas: "11,6G8" é um dígito a mais do OCR, não R$ 11,668.

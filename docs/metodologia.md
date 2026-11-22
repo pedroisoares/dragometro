@@ -114,6 +114,11 @@ O nome da loja e a descrição exibida não entram nas contas. As contas são fe
 - **Corrigir a descrição de um item:** o subitem do IPCA é recalculado.
   - Item da foto: os produtos da loja são reagrupados, do cupom mais antigo para o mais recente. Assim o item corrigido entra junto com as outras compras do mesmo produto, ou sai do grupo se a correção mostrar que era outro produto. Dá para aplicar a correção a todas as compras do produto de uma vez.
   - Item da SEFAZ: o código manda, então a descrição muda em todas as compras daquele produto e o produto não muda.
+- **Corrigir quantidade, unidade, valor unitário ou valor total de um item:** vale só para aquele item.
+  - Quantidade, unidade e valor unitário formam o preço comparável (R$/kg, R$/L ou R$/un), usado na variação de preço e na média geométrica.
+  - O valor total é o gasto, que pesa a categoria no índice pessoal.
+  - A tela confere se quantidade × valor unitário = total. Se não bater (por exemplo, por desconto), avisa e oferece corrigir o total ou calcular o valor unitário, mas deixa salvar assim mesmo.
+  - Quantidade fracionada com unidade UN é quase sempre peso: a revisão da foto troca para KG sozinha, e a edição avisa.
 - **Corrigir o nome da loja:** só muda o que aparece na tela, sem efeito nas contas.
 - **Juntar lojas:** quando o OCR leu o nome tão diferente que a mesma loja foi guardada duas vezes, os produtos ficam divididos e a variação de preço se perde. Ao corrigir o nome, o app avisa se já existe uma loja com nome parecido e oferece juntar as duas. Depois de juntar, os produtos são reagrupados. Duas lojas com CNPJ nunca se juntam, porque cada filial tem seus próprios preços.
 

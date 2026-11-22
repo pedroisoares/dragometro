@@ -1,5 +1,5 @@
 import { classificar } from '@dragometro/classificacao';
-import { chaveDeComparacao, maisParecido, semelhanca } from '@dragometro/foto';
+import { chaveDeComparacao, contaFecha, maisParecido, semelhanca } from '@dragometro/foto';
 import type { BancoSQL } from './banco';
 
 /**
@@ -44,27 +44,99 @@ export async function editarDescricao(
   chaveNota: string,
   ordem: number,
   novaDescricao: string,
-  { todasDoProduto = false }: { todasDoProduto?: boolean } = {},
+  opcoes: { todasDoProduto?: boolean } = {},
 ): Promise<ResultadoEdicao> {
-  const descricao = normalizarDescricao(novaDescricao);
-  if (!descricao) throw new Error('A descrição não pode ficar vazia.');
-  const item = await db.getFirstAsync<{ id: number; produtoId: string; codigo: string | null; lojaId: string }>(
-    `SELECT i.id, i.produto_id AS produtoId, i.codigo, n.cnpj_emitente AS lojaId
+  return editarItem(db, chaveNota, ordem, { descricao: novaDescricao }, opcoes);
+}
+
+/** Unidades oferecidas na edição de um item (como o cupom escreve). */
+export const UNIDADES_ITEM = ['UN', 'KG', 'G', 'L', 'ML'] as const;
+
+/** O que pode ser corrigido num item. Campos ausentes ficam como estão. */
+export interface EdicaoItem {
+  descricao?: string;
+  quantidade?: number;
+  /** Como no cupom: "UN", "KG", "G", "L", "ML" (ou a unidade original, como "PCT"). */
+  unidade?: string;
+  valorUnitario?: number;
+  valorTotal?: number;
+}
+
+export interface ResultadoEdicaoItem extends ResultadoEdicao {
+  /** Quantidade × valor unitário = valor total (com arredondamento ou truncamento)? */
+  contaFecha: boolean;
+}
+
+/**
+ * Corrige um item de um cupom: descrição, quantidade, unidade, valor unitário e total.
+ *
+ * - Quantidade, unidade e valor unitário formam o preço comparável (R$/kg, R$/L, R$/un)
+ *   usado na variação de preço e na média geométrica; o valor total é o gasto, que pesa
+ *   a categoria no índice pessoal. Essas correções valem só para ESTE item.
+ * - A descrição segue as regras de `editarDescricao` (reclassifica no IPCA e reagrupa).
+ *
+ * A conta pode não fechar (desconto no item, por exemplo): a correção é salva assim
+ * mesmo, e `contaFecha` avisa.
+ */
+export async function editarItem(
+  db: BancoSQL,
+  chaveNota: string,
+  ordem: number,
+  edicao: EdicaoItem,
+  { todasDoProduto = false }: { todasDoProduto?: boolean } = {},
+): Promise<ResultadoEdicaoItem> {
+  const item = await db.getFirstAsync<{
+    id: number;
+    produtoId: string;
+    codigo: string | null;
+    lojaId: string;
+    descricao: string;
+    subitem: string | null;
+    quantidade: number;
+    unidade: string;
+    valorUnitario: number;
+    valorTotal: number;
+  }>(
+    `SELECT i.id, i.produto_id AS produtoId, i.codigo, n.cnpj_emitente AS lojaId, i.descricao, i.subitem,
+            i.quantidade, i.unidade, i.valor_unitario AS valorUnitario, i.valor_total AS valorTotal
        FROM itens i JOIN notas n ON n.chave = i.chave_nota
       WHERE i.chave_nota = ? AND i.ordem = ?`,
     [chaveNota, ordem],
   );
   if (!item) throw new Error('Item não encontrado.');
-  const subitem = classificar(descricao)?.codigo ?? null;
-  let itensAlterados = 0;
+
+  const descricao = edicao.descricao === undefined ? item.descricao : normalizarDescricao(edicao.descricao);
+  if (!descricao) throw new Error('A descrição não pode ficar vazia.');
+  const quantidade = edicao.quantidade ?? item.quantidade;
+  const valorUnitario = edicao.valorUnitario ?? item.valorUnitario;
+  const valorTotal = edicao.valorTotal ?? item.valorTotal;
+  const unidade = (edicao.unidade ?? item.unidade).trim().toUpperCase();
+  for (const [nome, v] of [
+    ['A quantidade', quantidade],
+    ['O valor unitário', valorUnitario],
+    ['O valor total', valorTotal],
+  ] as const) {
+    if (!Number.isFinite(v) || v <= 0) throw new Error(`${nome} precisa ser um número maior que zero.`);
+  }
+  if (!unidade) throw new Error('Escolha a unidade.');
+
+  const mudouDescricao = descricao !== item.descricao;
+  const subitem = mudouDescricao ? (classificar(descricao)?.codigo ?? null) : item.subitem;
+  let itensAlterados = 1;
 
   await db.withTransactionAsync(async () => {
-    const r =
-      item.codigo || todasDoProduto
-        ? await db.runAsync('UPDATE itens SET descricao = ?, subitem = ? WHERE produto_id = ?', [descricao, subitem, item.produtoId])
-        : await db.runAsync('UPDATE itens SET descricao = ?, subitem = ? WHERE id = ?', [descricao, subitem, item.id]);
-    itensAlterados = r.changes;
-    if (!item.codigo) await reagruparLoja(db, item.lojaId);
+    if (mudouDescricao) {
+      const r =
+        item.codigo || todasDoProduto
+          ? await db.runAsync('UPDATE itens SET descricao = ?, subitem = ? WHERE produto_id = ?', [descricao, subitem, item.produtoId])
+          : await db.runAsync('UPDATE itens SET descricao = ?, subitem = ? WHERE id = ?', [descricao, subitem, item.id]);
+      itensAlterados = r.changes;
+    }
+    await db.runAsync(
+      'UPDATE itens SET quantidade = ?, unidade = ?, valor_unitario = ?, valor_total = ? WHERE id = ?',
+      [quantidade, unidade, valorUnitario, valorTotal, item.id],
+    );
+    if (mudouDescricao && !item.codigo) await reagruparLoja(db, item.lojaId);
   });
 
   const depois = await db.getFirstAsync<{ produtoId: string; compras: number }>(
@@ -72,7 +144,13 @@ export async function editarDescricao(
        FROM itens i WHERE i.id = ?`,
     [item.id],
   );
-  return { produtoId: depois!.produtoId, comprasDoProduto: depois!.compras, itensAlterados, subitem };
+  return {
+    produtoId: depois!.produtoId,
+    comprasDoProduto: depois!.compras,
+    itensAlterados,
+    subitem,
+    contaFecha: contaFecha(quantidade, valorUnitario, valorTotal),
+  };
 }
 
 /**
