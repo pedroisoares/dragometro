@@ -93,6 +93,30 @@ Alguns produtos não têm subitem no IPCA (creme de leite, batata palha) e ficam
 
 A comparação de um produto com o IPCA é feita com o subitem dele: o seu arroz contra o "Arroz" do IPCA. O IBGE divulga o IPCA de cada mês por volta do dia 10 do mês seguinte.
 
+## 7. O que é "o mesmo produto" e como as correções entram nas contas
+
+Todas as contas acima (média geométrica no período, variação, pesos, índice por categoria) usam dois dados de cada item comprado:
+
+- **o produto** (`produto_id`), que diz quais compras são do mesmo produto e por isso podem ter o preço comparado;
+- **o subitem do IPCA** (`subitem`), que diz em que categoria o produto entra.
+
+O nome da loja e a descrição exibida não entram nas contas. As contas são feitas na hora, a partir dos itens guardados. Assim, qualquer correção vale imediatamente para variações e índices, sem recálculo à parte.
+
+**Como o produto é definido:**
+
+| Origem do cupom | Produto |
+|---|---|
+| SEFAZ (QR Code ou chave) | loja (CNPJ) + código do produto no cupom |
+| Foto (sem chave) | loja + descrição; uma descrição igual ou parecida (≥ 85%, ignorando espaços e acentos) com a de um produto já comprado na mesma loja vira o mesmo produto |
+
+**Correções e o efeito nas contas:**
+
+- **Corrigir a descrição de um item:** o subitem do IPCA é recalculado.
+  - Item da foto: os produtos da loja são reagrupados, do cupom mais antigo para o mais recente. Assim o item corrigido entra junto com as outras compras do mesmo produto, ou sai do grupo se a correção mostrar que era outro produto. Dá para aplicar a correção a todas as compras do produto de uma vez.
+  - Item da SEFAZ: o código manda, então a descrição muda em todas as compras daquele produto e o produto não muda.
+- **Corrigir o nome da loja:** só muda o que aparece na tela, sem efeito nas contas.
+- **Juntar lojas:** quando o OCR leu o nome tão diferente que a mesma loja foi guardada duas vezes, os produtos ficam divididos e a variação de preço se perde. Ao corrigir o nome, o app avisa se já existe uma loja com nome parecido e oferece juntar as duas. Depois de juntar, os produtos são reagrupados. Duas lojas com CNPJ nunca se juntam, porque cada filial tem seus próprios preços.
+
 ## Referências
 
 - IBGE, *Sistema Nacional de Índices de Preços ao Consumidor: métodos de cálculo* (Série Relatórios Metodológicos).
