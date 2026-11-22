@@ -1,6 +1,7 @@
 import {
   detalheNota,
-  editarDescricao,
+  editarItem,
+  UNIDADES_ITEM,
   excluirNota,
   juntarLojas,
   lojasParecidas,
@@ -10,10 +11,12 @@ import {
 } from '@dragometro/armazenamento';
 import { categoria } from '@dragometro/classificacao';
 import { lerUnidadeCupom } from '@dragometro/core';
+import { contaFecha } from '@dragometro/foto';
 import { Link, router, Stack, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { dinheiroTexto, numeroTexto, quantidadeTexto } from '../../lib/campos';
 import { dataCurta, numero, porUnidade, reais } from '../../lib/formato';
 import { useDados } from '../../lib/useDados';
 import { cores, espaco } from '../../tema';
@@ -31,7 +34,7 @@ export default function Cupom() {
   const { dados, erro } = useDados(async (d) => ({ nota: await detalheNota(d, chave) }), `${chave}|${versao}`);
   const [nome, setNome] = useState<string | null>(null);
   const [parecidas, setParecidas] = useState<LojaParecida[]>([]);
-  const [editando, setEditando] = useState<{ ordem: number; texto: string; todas: boolean } | null>(null);
+  const [editando, setEditando] = useState<Edicao | null>(null);
   const [aviso, setAviso] = useState<string>();
   const [confirmando, setConfirmando] = useState(false);
   const [falha, setFalha] = useState<string>();
@@ -79,14 +82,27 @@ export default function Cupom() {
       }
     });
 
-  const salvarDescricao = () =>
+  const salvarItem = () =>
     tentar(async () => {
       if (!editando) return;
-      const r = await editarDescricao(db, chave, editando.ordem, editando.texto, { todasDoProduto: editando.todas });
+      const r = await editarItem(
+        db,
+        chave,
+        editando.ordem,
+        {
+          descricao: editando.texto,
+          quantidade: numeroTexto(editando.quantidade),
+          unidade: editando.unidade,
+          valorUnitario: numeroTexto(editando.valorUnitario),
+          valorTotal: numeroTexto(editando.valorTotal),
+        },
+        { todasDoProduto: editando.todas },
+      );
       const sub = r.subitem ? categoria(r.subitem)?.nome : undefined;
       setEditando(null);
       setAviso(
-        `Descrição corrigida${r.itensAlterados > 1 ? ` em ${r.itensAlterados} compras` : ''}. ` +
+        `Item corrigido${r.itensAlterados > 1 ? ` (descrição em ${r.itensAlterados} compras)` : ''}. ` +
+          (r.contaFecha ? '' : 'Atenção: quantidade × valor unitário não bate com o total (desconto?). ') +
           (r.comprasDoProduto > 1
             ? `O item é comparado com ${r.comprasDoProduto - 1} ${r.comprasDoProduto === 2 ? 'outra compra' : 'outras compras'} do mesmo produto. `
             : 'Por enquanto é a única compra deste produto. ') +
@@ -164,10 +180,9 @@ export default function Cupom() {
           <EditarItem
             key={item.ordem}
             item={item}
-            texto={editando.texto}
-            todas={editando.todas}
+            edicao={editando}
             aoMudar={(c) => setEditando({ ...editando, ...c })}
-            aoSalvar={salvarDescricao}
+            aoSalvar={salvarItem}
             aoCancelar={() => setEditando(null)}
           />
         ) : (
@@ -176,7 +191,15 @@ export default function Cupom() {
             item={item}
             aoEditar={() => {
               setAviso(undefined);
-              setEditando({ ordem: item.ordem, texto: item.descricao, todas: false });
+              setEditando({
+                ordem: item.ordem,
+                texto: item.descricao,
+                todas: false,
+                quantidade: quantidadeTexto(item.quantidade, item.unidade),
+                unidade: item.unidade.toUpperCase(),
+                valorUnitario: dinheiroTexto(item.valorUnitario),
+                valorTotal: dinheiroTexto(item.valorTotal),
+              });
             }}
           />
         ),
@@ -222,55 +245,144 @@ function LinhaItem({ item, aoEditar }: { item: ItemDaNota; aoEditar: () => void 
   );
 }
 
+/** Item em edição: campos como texto, do jeito que a pessoa digita. */
+interface Edicao {
+  ordem: number;
+  texto: string;
+  todas: boolean;
+  quantidade: string;
+  unidade: string;
+  valorUnitario: string;
+  valorTotal: string;
+}
+
 function EditarItem({
   item,
-  texto,
-  todas,
+  edicao,
   aoMudar,
   aoSalvar,
   aoCancelar,
 }: {
   item: ItemDaNota;
-  texto: string;
-  todas: boolean;
-  aoMudar: (c: { texto?: string; todas?: boolean }) => void;
+  edicao: Edicao;
+  aoMudar: (c: Partial<Edicao>) => void;
   aoSalvar: () => void;
   aoCancelar: () => void;
 }) {
   const outras = item.comprasDoProduto - 1;
+  const mudouDescricao = edicao.texto.trim().toUpperCase().replace(/\s+/g, ' ') !== item.descricao;
+  const q = numeroTexto(edicao.quantidade);
+  const u = numeroTexto(edicao.valorUnitario);
+  const t = numeroTexto(edicao.valorTotal);
+  const validos = q > 0 && u > 0 && t > 0 && edicao.texto.trim().length > 0;
+  const calculado = q > 0 && u > 0 ? Math.round(q * u * 100 + 1e-6) / 100 : Number.NaN;
+  const fecha = validos && contaFecha(q, u, t);
+  const unidades: string[] = [...UNIDADES_ITEM];
+  if (!unidades.includes(item.unidade.toUpperCase())) unidades.push(item.unidade.toUpperCase());
+  const base = lerUnidadeCupom(edicao.unidade);
+
   return (
     <View style={[estilos.cartao, estilos.destaque]}>
-      <Text style={estilos.suave}>Descrição do item</Text>
+      <Text style={estilos.suave}>Descrição</Text>
       <TextInput
         style={estilos.campo}
-        value={texto}
-        onChangeText={(t) => aoMudar({ texto: t })}
-        autoFocus
+        value={edicao.texto}
+        onChangeText={(texto) => aoMudar({ texto })}
         autoCapitalize="characters"
-        onSubmitEditing={aoSalvar}
       />
-      {item.temCodigo ? (
-        <Text style={estilos.suave}>
-          Item de cupom da SEFAZ: o código identifica o produto, então a descrição muda em
-          {outras > 0 ? ` todas as ${item.comprasDoProduto} compras dele.` : ' todas as compras dele.'}
-        </Text>
-      ) : (
-        outras > 0 && (
-          <Pressable style={estilos.linha} onPress={() => aoMudar({ todas: !todas })} hitSlop={6}>
-            <View style={[estilos.caixa, todas && { backgroundColor: cores.dragao, borderColor: cores.dragao }]}>
-              {todas && <Text style={estilos.marca}>✓</Text>}
-            </View>
-            <Text style={[estilos.texto, { flex: 1 }]}>
-              Corrigir também {outras === 1 ? 'na outra compra' : `nas outras ${outras} compras`} deste produto
-            </Text>
+      {mudouDescricao &&
+        (item.temCodigo ? (
+          <Text style={estilos.suave}>
+            Item de cupom da SEFAZ: o código identifica o produto, então a descrição muda em
+            {outras > 0 ? ` todas as ${item.comprasDoProduto} compras dele.` : ' todas as compras dele.'}
+          </Text>
+        ) : (
+          outras > 0 && (
+            <Pressable style={estilos.linha} onPress={() => aoMudar({ todas: !edicao.todas })} hitSlop={6}>
+              <View style={[estilos.caixa, edicao.todas && { backgroundColor: cores.dragao, borderColor: cores.dragao }]}>
+                {edicao.todas && <Text style={estilos.marca}>✓</Text>}
+              </View>
+              <Text style={[estilos.texto, { flex: 1 }]}>
+                Corrigir a descrição também {outras === 1 ? 'na outra compra' : `nas outras ${outras} compras`} deste produto
+              </Text>
+            </Pressable>
+          )
+        ))}
+
+      <Text style={estilos.suave}>Unidade</Text>
+      <View style={[estilos.linha, { flexWrap: 'wrap' }]}>
+        {unidades.map((un) => (
+          <Pressable
+            key={un}
+            onPress={() => aoMudar({ unidade: un })}
+            style={[estilos.chip, edicao.unidade === un && { backgroundColor: cores.dragao, borderColor: cores.dragao }]}
+          >
+            <Text style={[estilos.chipTexto, edicao.unidade === un && { color: cores.fundo }]}>{un}</Text>
           </Pressable>
-        )
+        ))}
+      </View>
+
+      {base === 'un' && q > 0 && !Number.isInteger(q) && (
+        <Text style={[estilos.suave, { color: cores.dragao }]}>
+          ⚠ Quantidade fracionada com unidade {edicao.unidade}: se for peso, escolha KG, senão o preço sai por unidade e
+          não por quilo.
+        </Text>
       )}
+      <View style={estilos.linha}>
+        <CampoNumero rotulo={`Quantidade (${edicao.unidade.toLowerCase()})`} valor={edicao.quantidade} aoMudar={(quantidade) => aoMudar({ quantidade })} />
+        <CampoNumero
+          rotulo={`Valor unitário${base === 'un' ? '' : ` (R$${porUnidade(base === 'g' || base === 'ml' ? (base === 'g' ? 'kg' : 'l') : base)})`}`}
+          valor={edicao.valorUnitario}
+          aoMudar={(valorUnitario) => aoMudar({ valorUnitario })}
+        />
+      </View>
+      <CampoNumero rotulo="Valor total do item (R$)" valor={edicao.valorTotal} aoMudar={(valorTotal) => aoMudar({ valorTotal })} />
+
+      {validos ? (
+        fecha ? (
+          <Text style={[estilos.suave, { color: cores.verde }]}>
+            ✓ {edicao.quantidade} × {edicao.valorUnitario} = {reais(t)}
+          </Text>
+        ) : (
+          <View style={{ gap: espaco(0.75) }}>
+            <Text style={[estilos.suave, { color: cores.dragao }]}>
+              ⚠ {edicao.quantidade} × {edicao.valorUnitario} = {reais(calculado)}, diferente do total {reais(t)}. Pode ser
+              desconto; se não for, corrija:
+            </Text>
+            <View style={[estilos.linha, { flexWrap: 'wrap' }]}>
+              <Pressable style={estilos.chip} onPress={() => aoMudar({ valorTotal: dinheiroTexto(calculado) })}>
+                <Text style={estilos.chipTexto}>Usar {reais(calculado)} no total</Text>
+              </Pressable>
+              <Pressable style={estilos.chip} onPress={() => aoMudar({ valorUnitario: dinheiroTexto(Math.round((t / q) * 100) / 100) })}>
+                <Text style={estilos.chipTexto}>Calcular o valor unitário pelo total</Text>
+              </Pressable>
+            </View>
+          </View>
+        )
+      ) : (
+        <Text style={[estilos.suave, { color: cores.dragao }]}>Preencha descrição, quantidade e valores (maiores que zero).</Text>
+      )}
+
       <Text style={estilos.suave}>
-        Depois de salvar, o app reclassifica o item no IPCA e confere se ele é o mesmo produto de outras compras desta
-        loja (descrição igual ou parecida), para entrar junto nos cálculos.
+        Quantidade, unidade e valor unitário formam o preço comparável (por kg, litro ou unidade) usado na variação de
+        preço; o total é o seu gasto, que pesa cada categoria na sua inflação. Mudar a descrição reclassifica o item no
+        IPCA e confere se ele é o mesmo produto de outras compras desta loja.
       </Text>
-      <Botoes salvar="Salvar descrição" aoSalvar={aoSalvar} aoCancelar={aoCancelar} />
+      <Botoes salvar="Salvar item" aoSalvar={validos ? aoSalvar : () => {}} aoCancelar={aoCancelar} />
+    </View>
+  );
+}
+
+function CampoNumero({ rotulo, valor, aoMudar }: { rotulo: string; valor: string; aoMudar: (t: string) => void }) {
+  return (
+    <View style={{ flex: 1, gap: espaco(0.5) }}>
+      <Text style={estilos.suave}>{rotulo}</Text>
+      <TextInput
+        style={[estilos.campo, { textAlign: 'right', fontVariant: ['tabular-nums'] }]}
+        value={valor}
+        onChangeText={aoMudar}
+        keyboardType="decimal-pad"
+      />
     </View>
   );
 }
@@ -338,6 +450,14 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  chip: {
+    borderWidth: 1,
+    borderColor: cores.textoSuave,
+    borderRadius: 16,
+    paddingHorizontal: espaco(1.5),
+    paddingVertical: espaco(0.5),
+  },
+  chipTexto: { color: cores.texto, fontSize: 13, fontWeight: '600' },
   marca: { color: cores.fundo, fontWeight: '800', fontSize: 14 },
   botao: { backgroundColor: cores.dragao, borderRadius: 10, padding: espaco(1.25), alignItems: 'center' },
   botaoSecundario: {

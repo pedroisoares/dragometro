@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   detalheNota,
   editarDescricao,
+  editarItem,
   itensComprados,
   juntarLojas,
   listarNotas,
@@ -162,5 +163,67 @@ describe('lojas guardadas duas vezes', () => {
     expect(fica).toBe('11222333000181');
     expect(await lojasParecidas(db, '11222333000181', 'PADARIA EXEMPLO')).toEqual([]);
     await expect(juntarLojas(db, '11222333000181', '99888777000166', 'X')).rejects.toThrow(/CNPJ/);
+  });
+});
+
+describe('corrigir quantidade, unidade e valores de um item', () => {
+  it('corrige só este item, e a variação de preço usa os valores novos', async () => {
+    await salvarCupomFoto(db, semana1);
+    await salvarCupomFoto(db, semana2);
+    const chave2 = await chaveDe('2026-11-14T10:00:00');
+    // Cebola da semana 2 foi lida como 1 kg × 5,50; o certo era 0,800 kg × 6,00 = 4,80.
+    const r = await editarItem(db, chave2, 2, { quantidade: 0.8, unidade: 'kg', valorUnitario: 6, valorTotal: 4.8 });
+    expect(r).toMatchObject({ contaFecha: true, itensAlterados: 1, comprasDoProduto: 2 });
+
+    const item = (await detalheNota(db, chave2))!.itens[1]!;
+    expect(item).toMatchObject({ quantidade: 0.8, unidade: 'KG', valorUnitario: 6, valorTotal: 4.8, descricao: 'CEBOLA' });
+    const [cebola] = await produto('CEBOLA');
+    const serie = variacaoDoItem(observacoesDeItens(await itensComprados(db, cebola!.produtoId)), cebola!.produtoId, 'semana');
+    expect(serie.map((s) => Math.round(s.preco * 100) / 100)).toEqual([5, 6]);
+    // A outra semana não mudou.
+    expect((await detalheNota(db, await chaveDe('2026-11-07T10:00:00')))!.itens[1]).toMatchObject({ valorUnitario: 5 });
+  });
+
+  it('corrige descrição e valores de uma vez', async () => {
+    await salvarCupomFoto(db, semana1);
+    await salvarCupomFoto(db, semana2);
+    const r = await editarItem(db, await chaveDe('2026-11-14T10:00:00'), 1, {
+      descricao: 'TOMATE ITALIANO',
+      quantidade: 1.1,
+      valorUnitario: 10,
+      valorTotal: 11,
+    });
+    expect(r).toMatchObject({ comprasDoProduto: 2, subitem: '1103028', contaFecha: true });
+  });
+
+  it('salva mesmo quando a conta não fecha (desconto), mas avisa', async () => {
+    await salvarCupomFoto(db, semana1);
+    const r = await editarItem(db, await chaveDe('2026-11-07T10:00:00'), 2, { valorTotal: 4.5 });
+    expect(r.contaFecha).toBe(false);
+  });
+
+  it('recusa valores inválidos', async () => {
+    await salvarCupomFoto(db, semana1);
+    const chave = await chaveDe('2026-11-07T10:00:00');
+    await expect(editarItem(db, chave, 1, { quantidade: 0 })).rejects.toThrow(/quantidade/);
+    await expect(editarItem(db, chave, 1, { valorUnitario: Number.NaN })).rejects.toThrow(/valor unitário/);
+    await expect(editarItem(db, chave, 1, { unidade: ' ' })).rejects.toThrow(/unidade/);
+    await expect(editarItem(db, chave, 99, { valorTotal: 1 })).rejects.toThrow(/não encontrado/);
+  });
+});
+
+describe('migração v4', () => {
+  it('itens da foto com quantidade fracionada e unidade UN passam a KG', async () => {
+    await salvarCupomFoto(db, {
+      ...semana1,
+      itens: [
+        { descricao: 'LARANJA PERA', quantidade: 0.965, unidade: 'UN', valorUnitario: 4.99, valorTotal: 4.82 },
+        { descricao: 'ALFACE', quantidade: 2, unidade: 'UN', valorUnitario: 3, valorTotal: 6 },
+      ],
+    });
+    await db.execAsync('PRAGMA user_version = 3');
+    await migrar(db);
+    const itens = (await detalheNota(db, await chaveDe('2026-11-07T10:00:00')))!.itens;
+    expect(itens.map((i) => i.unidade)).toEqual(['KG', 'UN']);
   });
 });

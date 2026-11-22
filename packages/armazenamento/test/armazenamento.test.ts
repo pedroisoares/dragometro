@@ -36,7 +36,7 @@ describe('migrações', () => {
   it('cria o esquema e pode rodar de novo sem erro', async () => {
     await migrar(db);
     const v = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version', []);
-    expect(v?.user_version).toBe(3);
+    expect(v?.user_version).toBe(4);
   });
 
   it('atualiza um banco da versão 1 classificando os itens já guardados', async () => {

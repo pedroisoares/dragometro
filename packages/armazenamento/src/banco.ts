@@ -14,7 +14,7 @@ export interface BancoSQL {
 
 import { classificar } from '@dragometro/classificacao';
 
-const VERSAO_ATUAL = 3;
+const VERSAO_ATUAL = 4;
 
 /** Esquema da versão 1 (exportado só para os testes de migração). */
 export const ESQUEMA_V1 = `
@@ -80,6 +80,14 @@ export async function migrar(db: BancoSQL): Promise<void> {
       // v3: de onde veio a nota. 'sefaz' (QR Code ou chave) ou 'foto' (itens lidos da foto,
       // com chave criada pelo app e loja identificada pelo nome quando não há CNPJ).
       await db.execAsync(`ALTER TABLE notas ADD COLUMN origem TEXT NOT NULL DEFAULT 'sefaz';`);
+    }
+    if (versao < 4) {
+      // v4: itens lidos pela foto com quantidade fracionada ("0,965") e unidade UN eram peso
+      // cuja unidade o OCR não leu. Com UN o preço comparável saía por unidade, não por kg.
+      await db.execAsync(`
+        UPDATE itens SET unidade = 'KG'
+         WHERE unidade = 'UN' AND quantidade <> CAST(quantidade AS INTEGER)
+           AND chave_nota IN (SELECT chave FROM notas WHERE origem = 'foto');`);
     }
     await db.execAsync(`PRAGMA user_version = ${VERSAO_ATUAL}`);
   });

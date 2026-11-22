@@ -3,6 +3,7 @@ import { contaFecha, somaDosItens, type CupomFoto, type SituacaoItem, type Unida
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { dinheiroTexto as dinheiro, numeroTexto, quantidadeTexto } from './campos';
 import { reais } from './formato';
 import { cores, espaco } from '../tema';
 
@@ -42,7 +43,7 @@ export function RevisarCupom({
       id,
       descricao: i.descricao,
       quantidade: Number.isFinite(i.quantidade) ? quantidadeTexto(i.quantidade, i.unidade) : '',
-      unidade: i.unidade,
+      unidade: i.unidade === 'UN' && Number.isFinite(i.quantidade) && !Number.isInteger(i.quantidade) ? 'KG' : i.unidade,
       valorUnitario: Number.isFinite(i.valorUnitario) ? dinheiro(i.valorUnitario) : '',
       valorTotal: Number.isFinite(i.valorTotal) ? dinheiro(i.valorTotal) : '',
       situacaoLida: i.situacao,
@@ -79,7 +80,15 @@ export function RevisarCupom({
 
   const mudarItem = (id: number, campo: Partial<ItemEditavel>) => {
     setConfirmarDiferenca(false);
-    setItens((atual) => atual.map((i) => (i.id === id ? { ...i, ...campo, situacaoLida: undefined } : i)));
+    setItens((atual) =>
+      atual.map((i) => {
+        if (i.id !== id) return i;
+        const novo = { ...i, ...campo, situacaoLida: undefined };
+        // Quantidade fracionada ("0,965") é peso: com UN, o preço sairia por unidade.
+        if (campo.quantidade !== undefined && novo.unidade === 'UN' && fracionada(novo.quantidade)) novo.unidade = 'KG';
+        return novo;
+      }),
+    );
   };
 
   async function salvar() {
@@ -266,23 +275,18 @@ function situacaoAtual(item: ItemEditavel, v: { quantidade: number; valorUnitari
   return item.situacaoLida === 'ajustado' ? 'ajustado' : 'ok';
 }
 
+/** "0,965" → true; "2" → false. */
+function fracionada(texto: string): boolean {
+  const v = numeroTexto(texto);
+  return Number.isFinite(v) && !Number.isInteger(v);
+}
+
 function completo(v: { quantidade: number; valorUnitario: number; valorTotal: number }): boolean {
   return v.quantidade > 0 && v.valorUnitario > 0 && v.valorTotal > 0;
 }
 
-/** "16,98" ou "16.98" → 16.98 */
-function numeroTexto(t: string): number {
-  const limpo = t.trim().replace(/\s/g, '').replace(',', '.');
-  return limpo && /^\d*\.?\d+$/.test(limpo) ? Number(limpo) : Number.NaN;
-}
 
-function dinheiro(v: number): string {
-  return v.toFixed(2).replace('.', ',');
-}
 
-function quantidadeTexto(v: number, unidade: UnidadeFoto): string {
-  return (unidade === 'UN' && Number.isInteger(v) ? String(v) : v.toFixed(3)).replace('.', ',');
-}
 
 /** "2026-11-07T10:09:58" → "07/11/2026 10:09:58" (os segundos ajudam a não duplicar o cupom). */
 function isoParaTexto(iso: string): string {
