@@ -191,6 +191,21 @@ Depois informe esse endereço ao Expo antes de rodar o app (troque `172.16.3.152
 
 O QR Code passa a usar o endereço informado. No Windows, se o celular ainda não conectar, libere o Node.js no Firewall do Windows para redes privadas. A primeira vez que o Expo roda, o Windows costuma perguntar. Se você negou, ajuste em "Permitir um aplicativo pelo Firewall".
 
+### A porta 8081 já está em uso?
+
+O Expo usa a porta **8081**. Se outro programa do computador estiver usando essa porta, o celular chega nele em vez de chegar no Dragômetro. O Expo Go fica carregando sem terminar, e o terminal não mostra nenhuma linha `Android Bundling`.
+
+Escolha outra porta livre (por exemplo, 18082):
+
+```bash
+pnpm --filter @dragometro/app start --port 18082
+```
+
+O QR Code passa a usar a porta nova (`exp://SEU-IP:18082`), e a versão Web fica em `http://localhost:18082`. Para descobrir quem está usando a 8081:
+
+- **Windows:** `netstat -ano | findstr :8081` mostra o código do processo no fim da linha. Depois rode `tasklist /FI "PID eq CÓDIGO"`.
+- **Mac/Linux:** `lsof -i :8081`
+
 ### Não conectou?
 
 Se o celular não estiver na mesma rede, ou se a rede bloquear a conexão (comum em redes de empresa), use o modo túnel:
@@ -239,6 +254,7 @@ Os dois precisam passar. Depois leia o [CONTRIBUTING.md](../CONTRIBUTING.md). A 
 | "Não foi possível buscar o IPCA agora" | O site do IBGE não respondeu. Tente mais tarde. Não afeta a leitura dos cupons. |
 | "Não há aplicativos no seu celular que possam usar as informações desse QR Code" | O Expo Go não está instalado, ou (Android) o QR foi lido pela câmera comum. Abra o **Expo Go** e use o leitor dele, ou digite o endereço `exp://...` em **Enter URL manually**. |
 | O celular não abre o app | Mesma rede Wi-Fi? Confira se o [endereço do QR Code](#o-qr-code-mostra-o-endereço-errado) é o do seu computador. Se nada resolver, tente o [modo túnel](#não-conectou). |
+| O Expo Go fica carregando sem terminar e o terminal não mostra `Android Bundling` | Outro programa pode estar usando a porta 8081. Use outra porta: `pnpm --filter @dragometro/app start --port 18082` ([detalhes](#a-porta-8081-já-está-em-uso)). |
 | No Expo Go: "Failed to download remote update" | O celular não está alcançando o computador. Com o `pnpm app` rodando, abra no **navegador do celular** `http://IP-DO-COMPUTADOR:8081`. Se abrir alguma coisa, esse IP funciona: use-o no QR Code. Se não abrir, libere o Node.js no Firewall e confira se a rede do Windows está como **Privada**. |
 | No navegador do celular: "Abra pelo endereço localhost" | Normal: a versão Web só guarda dados em `localhost` ou `https`. Isso mostra que o celular **alcança** o computador; para usar no celular, abra pelo Expo Go. |
 | Na Web: "O Dragômetro já está aberto em outra aba" (ou erro com `createSyncAccessHandle`) | O navegador só deixa uma aba por vez usar os cupons. Feche as outras abas de `localhost:8081` e toque em **Tentar de novo**. Lembre que o `pnpm web` abre uma aba nova a cada vez que roda. |
