@@ -159,6 +159,10 @@ export interface ItemDaNota {
   valorTotal: number;
   /** Subitem do IPCA, ou null se não foi classificado. */
   subitem: string | null;
+  /** Item de cupom da SEFAZ, com código do produto (a descrição vale para todas as compras dele). */
+  temCodigo: boolean;
+  /** Quantas compras (itens) existem desse produto, em todos os cupons. */
+  comprasDoProduto: number;
 }
 
 export interface DetalheNota extends ResumoNota {
@@ -176,12 +180,14 @@ export async function detalheNota(db: BancoSQL, chave: string): Promise<DetalheN
     [chave],
   );
   if (!nota) return null;
-  const itens = await db.getAllAsync<ItemDaNota>(
+  const linhas = await db.getAllAsync<Omit<ItemDaNota, 'temCodigo'> & { temCodigo: number }>(
     `SELECT ordem, produto_id AS produtoId, descricao, quantidade, unidade, valor_unitario AS valorUnitario,
-            valor_total AS valorTotal, subitem
-       FROM itens WHERE chave_nota = ? ORDER BY ordem`,
+            valor_total AS valorTotal, subitem, codigo IS NOT NULL AS temCodigo,
+            (SELECT COUNT(*) FROM itens j WHERE j.produto_id = i.produto_id) AS comprasDoProduto
+       FROM itens i WHERE chave_nota = ? ORDER BY ordem`,
     [chave],
   );
+  const itens = linhas.map((l) => ({ ...l, temCodigo: Boolean(l.temCodigo) }));
   return { ...nota, quantidadeItens: itens.length, itens };
 }
 

@@ -165,7 +165,9 @@ Toque em **Ler QR Code do cupom**, permita o uso da câmera e aponte para o QR C
 - **Com chave de acesso** (44 números perto do rodapé): o app abre a consulta da SEFAZ já preenchida. Você só digita o captcha e toca em Consultar.
 - **Sem chave** (verdurões, feiras, caixas antigos): o app lê loja, data e itens da foto e mostra tudo para você conferir. Os itens em que a conta não fecha ficam destacados em laranja, e dá para abrir a foto para comparar. Corrija o que precisar e toque em **Salvar cupom**. Isso funciona também na versão Web.
 
-**Minhas compras:** toque num cupom para ver os itens dele, com a categoria do IPCA, peso × preço e total. Tocando num item, abre a página do produto. Se o nome da loja estiver errado, toque em **Corrigir nome**: ele muda em todas as compras daquela loja, e os próximos cupons com nome parecido caem na mesma loja.
+**Minhas compras:** toque num cupom para ver os itens dele, com a categoria do IPCA, peso × preço e total. Tocando num item, abre a página do produto. Se o nome da loja estiver errado, toque em **Corrigir nome**: ele muda em todas as compras daquela loja, e os próximos cupons com nome parecido caem na mesma loja. Se o app encontrar outra loja com nome parecido (a mesma loja guardada duas vezes), ele oferece **Juntar as lojas**.
+
+Para corrigir a descrição de um item, toque em **Editar** ao lado dele. O app reclassifica o item no IPCA e confere se ele é o mesmo produto de outras compras da loja, para entrar junto nos cálculos. Veja a seção 7 de `docs/metodologia.md`.
 
 Ler fotos usa a **API**, então deixe o `pnpm api` rodando num segundo terminal. Não precisa mudar o `.env`: no celular, o app troca `localhost` pelo IP do computador sozinho. Se o Firewall do Windows perguntar sobre o Node.js na porta 3333, permita em redes privadas.
 
