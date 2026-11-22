@@ -44,8 +44,8 @@ export function digitosDe(valor: number, casas: number): string {
  * Sem separador, usa as casas padrão do campo ("1890" como preço → 18,90).
  */
 export function lerNumero(texto: string, casasPadrao: number): NumeroLido | undefined {
-  // Sinais que o OCR gruda nas pontas: "=", ":", "%", aspas, "«".
-  const limpo = texto.replace(/^[^0-9A-Za-z&|!]+|[^0-9A-Za-z&|!,.]+$/g, '').replace(/[,.]+$/, '');
+  // Sinais que o OCR gruda nas pontas: "=", ":", "%", aspas, "«". "?" fica: é um dígito ilegível.
+  const limpo = texto.replace(/^[^0-9A-Za-z&|!?]+|[^0-9A-Za-z&|!?,.]+$/g, '').replace(/[,.]+$/, '');
   if (!limpo) return undefined;
 
   const grupos = limpo.split(/\s+/);

@@ -110,6 +110,47 @@ describe('lerCupomDoTexto', () => {
   });
 });
 
+describe('lerCupomDoTexto com foto de celular torta', () => {
+  // O mesmo cupom fotografado em alta resolução e inclinado (texto do OCR depois de endireitar),
+  // com os dados da loja trocados. O OCR troca "X" por "Y" e "A", lê "22,688", "82?" e o ano "20286".
+  const cupom = lerCupomDoTexto(fixture('hortifruti-ocr-celular-torto.txt'), new Date('2026-11-22T12:00:00'));
+  const item = (inicio: string) => cupom.itens.find((i) => i.descricao.startsWith(inicio))!;
+
+  it('não se confunde com o ano lido com um dígito a mais', () => {
+    expect(cupom.dataEmissao).toBe('2026-11-14T09:12:33');
+  });
+
+  it('acerta todos os totais e a soma bate com o total do cupom', () => {
+    expect(cupom.itens).toHaveLength(16);
+    expect(cupom.valorTotal).toBe(164.76);
+    expect(somaDosItens(cupom.itens)).toBe(164.76);
+  });
+
+  it('entende "KG Y", "KG A" e totais com dígito a mais', () => {
+    expect(item('CEBOLA')).toMatchObject({ quantidade: 0.23, valorUnitario: 11.98, valorTotal: 2.76 });
+    expect(item('MANGA')).toMatchObject({ quantidade: 0.57, valorUnitario: 10.98, valorTotal: 6.26 });
+    expect(item('PESSEGO')).toMatchObject({ quantidade: 0.33, valorUnitario: 24.9, valorTotal: 8.22 });
+    expect(item('MINAS')).toMatchObject({ quantidade: 0.42, valorUnitario: 54, valorTotal: 22.68 });
+  });
+
+  it('não inventa peso e preço quando não dá para ler: deixa em branco para a pessoa', () => {
+    // "HARAS KGX 160908:  5,86": o peso é ilegível.
+    const limao = item('LIMAO');
+    expect(limao.valorTotal).toBe(5.86);
+    expect(limao.quantidade).toBeNaN();
+    expect(limao.situacao).toBe('conferir');
+  });
+});
+
+describe('total do cupom mal lido', () => {
+  it('usa a linha de pagamento quando ela bate com os itens e o TOTAL não', () => {
+    const c = lerCupomDoTexto(
+      ['0001 ARROZ 5KG        24,90', '0002 FEIJAO 1KG        8,49', 'TOTAL           38,39', 'DINHEIRO        33,39', 'TROCO            0,00'].join('\n'),
+    );
+    expect(c.valorTotal).toBe(33.39);
+  });
+});
+
 describe('situacaoAposEdicao', () => {
   it('volta a ficar ok quando a pessoa corrige', () => {
     expect(situacaoAposEdicao({ quantidade: 0.965, valorUnitario: 4.99, valorTotal: 4.82 })).toBe('ok');

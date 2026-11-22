@@ -11,6 +11,8 @@ import {
   listarNotas,
   listarProdutos,
   migrar,
+  detalheNota,
+  renomearLoja,
   salvarCupomFoto,
   salvarNota,
   type CupomParaSalvar,
@@ -186,6 +188,28 @@ describe('cupons lidos pela foto', () => {
     expect(tomate.subitem).toBe('1103028'); // Tomate
     const obs = observacoesDeItens(await itensComprados(db, tomate.produtoId));
     expect(obs.map((o) => o.preco)).toEqual([18.9, 19.9]);
+  });
+
+  it('mostra os itens de um cupom e corrige o nome da loja em todas as compras', async () => {
+    await salvarCupomFoto(db, { ...semana1, loja: { nome: 'VERDURAO EXEMPLQ' } });
+    await salvarCupomFoto(db, { ...semana2, loja: { nome: 'VERDURAO EXEMPLQ' } });
+    const [recente, antiga] = await listarNotas(db);
+    const detalhe = (await detalheNota(db, antiga!.chave))!;
+    expect(detalhe.itens.map((i) => [i.ordem, i.descricao, i.valorTotal])).toEqual([
+      [1, 'TOMATE MEDIO', 12.95],
+      [2, 'ACELGA UND', 4.86],
+    ]);
+    expect(detalhe.lojaId).toBe('loja:VERDURAOEXEMPLQ');
+
+    await renomearLoja(db, detalhe.lojaId, '  Verdurão   Exemplo ');
+    expect((await listarNotas(db)).map((n) => n.nomeEmitente)).toEqual(['Verdurão Exemplo', 'Verdurão Exemplo']);
+    expect(recente!.chave).not.toBe(antiga!.chave);
+
+    // Na semana seguinte o OCR acerta o nome: cai na mesma loja.
+    await salvarCupomFoto(db, { ...semana2, numero: '9', loja: { nome: 'VERDURAO EXEMPLO' } });
+    const lojas = new Set((await listarProdutos(db)).map((p) => p.nomeEmitente));
+    expect([...lojas]).toEqual(['Verdurão Exemplo']);
+    expect(await detalheNota(db, 'nao-existe')).toBeNull();
   });
 
   it('notas da SEFAZ continuam com origem sefaz', async () => {

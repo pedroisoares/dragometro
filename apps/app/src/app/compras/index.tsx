@@ -1,10 +1,11 @@
 import { excluirNota, listarNotas, type ResumoNota } from '@dragometro/armazenamento';
+import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { dataCurta, reais } from '../lib/formato';
-import { useDados } from '../lib/useDados';
-import { cores, espaco } from '../tema';
+import { dataCurta, reais } from '../../lib/formato';
+import { useDados } from '../../lib/useDados';
+import { cores, espaco } from '../../tema';
 
 export default function Compras() {
   const db = useSQLiteContext();
@@ -31,7 +32,10 @@ export default function Compras() {
         <Text style={estilos.suave}>{notas ? 'Nenhum cupom salvo ainda.' : 'Carregando...'}</Text>
       }
       renderItem={({ item }) => (
-        <View style={estilos.cartao}>
+        <Pressable
+          style={({ pressed }) => [estilos.cartao, pressed && { opacity: 0.7 }]}
+          onPress={() => router.push({ pathname: '/compras/[chave]', params: { chave: item.chave } })}
+        >
           <View style={{ flex: 1 }}>
             <Text style={estilos.titulo}>{item.nomeEmitente ?? 'Loja'}</Text>
             <Text style={estilos.suave}>
@@ -44,13 +48,15 @@ export default function Compras() {
               {confirmando === item.chave ? 'Confirmar exclusão' : 'Excluir'}
             </Text>
           </Pressable>
-        </View>
+          <Text style={estilos.seta}>›</Text>
+        </Pressable>
       )}
     />
   );
 }
 
 const estilos = StyleSheet.create({
+  seta: { color: cores.textoSuave, fontSize: 22, marginLeft: espaco(0.5) },
   cartao: {
     backgroundColor: cores.cartao,
     borderRadius: 12,

@@ -13,6 +13,15 @@ export function contaFecha(quantidade: number, valorUnitario: number, valorTotal
   return Math.round(exato + 1e-6) === t || Math.floor(exato + 1e-6) === t;
 }
 
+/** Limites de bom senso para uma linha de cupom. */
+export interface Maximos {
+  quantidade?: number;
+  /** Preço por unidade ou por kg. Padrão: R$ 500. */
+  valorUnitario?: number;
+  /** Total do item. Use o total do cupom quando ele for conhecido. */
+  valorTotal?: number;
+}
+
 export interface LinhaResolvida {
   quantidade: number;
   valorUnitario: number;
@@ -34,8 +43,9 @@ export function resolverLinha(
   q: NumeroLido | undefined,
   u: NumeroLido | undefined,
   t: NumeroLido | undefined,
+  maximos: Maximos = {},
 ): LinhaResolvida | undefined {
-  return alternativasDaLinha(q, u, t)[0];
+  return alternativasDaLinha(q, u, t, 1, maximos)[0];
 }
 
 /**
@@ -48,11 +58,17 @@ export function alternativasDaLinha(
   u: NumeroLido | undefined,
   t: NumeroLido | undefined,
   limite = 6,
+  maximos: Maximos = {},
 ): LinhaResolvida[] {
   const achadas = new Map<string, LinhaResolvida>();
+  const { quantidade: maxQ = 50, valorUnitario: maxU = 500, valorTotal: maxT = 5000 } = maximos;
   const considerar = (quantidade: number, valorUnitario: number, valorTotal: number, custo: number) => {
     if (!(quantidade > 0 && valorUnitario > 0 && valorTotal > 0)) return;
+    // Bom senso: descarta leituras absurdas (R$ 1.609/kg, item maior que o cupom inteiro).
+    if (quantidade > maxQ || valorUnitario > maxU || valorTotal > maxT) return;
     if (!contaFecha(quantidade, valorUnitario, valorTotal)) return;
+    // Arredondar é o mais comum; truncar só fecha "de raspão" (custo um pouco maior).
+    if (Math.round(quantidade * valorUnitario * 100 + 1e-6) !== centavos(valorTotal)) custo += 0.1;
     const chave = `${quantidade}|${valorUnitario}|${valorTotal}`;
     const atual = achadas.get(chave);
     if (!atual || custo < atual.custo) achadas.set(chave, { quantidade, valorUnitario, valorTotal, custo });
@@ -129,16 +145,19 @@ export function ajustarPelaSoma(
     if (melhor && custo > melhor.custo) return;
     if (i === linhas.length) {
       if (soma !== alvo) return;
-      if (melhor && custo === melhor.custo) empate = true;
+      if (melhor && Math.abs(custo - melhor.custo) < 1e-9) empate = true;
       else if (!melhor || custo < melhor.custo) {
         melhor = { escolha: [...escolha], custo };
         empate = false;
       }
       return;
     }
+    const atual = linhas[i]![0]!;
     for (const [j, r] of linhas[i]!.entries()) {
       escolha[i] = j;
-      visitar(i + 1, soma + centavos(r.valorTotal), custo + r.custo);
+      // Custo extra em relação ao que já foi escolhido, e um pouquinho por item mudado:
+      // entre soluções parecidas, vence a que mexe em menos itens.
+      visitar(i + 1, soma + centavos(r.valorTotal), custo + (j === 0 ? 0 : r.custo - atual.custo + 0.01));
     }
   };
   if (linhas.length > 0 && linhas.length <= 8) visitar(0, 0, 0);
@@ -149,7 +168,10 @@ export function ajustarPelaSoma(
 export function semResolver(q?: NumeroLido, u?: NumeroLido, t?: NumeroLido) {
   const quantidade = q ? valorDe(q) : Number.NaN;
   const total = t ? valorDe(t) : Number.NaN;
-  let preco = u ? valorDe(u) : Number.NaN;
-  if (!(preco > 0) && quantidade > 0 && total > 0) preco = Math.round((total / quantidade) * 100) / 100;
-  return { quantidade, valorUnitario: preco, valorTotal: total };
+  const preco = u ? valorDe(u) : Number.NaN;
+  // Só mantém peso e preço se fecharem com o total; senão, ficam em branco para a pessoa preencher.
+  if (quantidade > 0 && preco > 0 && total > 0 && contaFecha(quantidade, preco, total)) {
+    return { quantidade, valorUnitario: preco, valorTotal: total };
+  }
+  return { quantidade: Number.NaN, valorUnitario: Number.NaN, valorTotal: total };
 }
