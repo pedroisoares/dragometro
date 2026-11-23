@@ -1,6 +1,15 @@
 # OCR: como a foto do cupom vira dados
 
-Pela tela **Ler cupom → "Cupom sem QR Code? Use a foto do cupom"**, uma foto do cupom inteiro serve para os dois casos. Se o texto tiver a chave de acesso, segue a etapa 1. Se não tiver, segue a etapa 2.
+Pela tela **Ler cupom → "Cupom sem QR Code? Use a foto do cupom"**, uma foto do cupom inteiro serve para os dois casos. Se a chave de acesso for lida (44 números com dígito verificador válido), segue a etapa 1.
+
+Se a chave **não** for lida, o app diz isso claramente ("Não encontrei a chave de acesso") e mostra quantos números conseguiu ler. Depois oferece os dois caminhos:
+
+- **O cupom tem a chave:** digitar a chave (com os números lidos já preenchidos) ou tirar outra foto, mais perto da chave.
+- **O cupom não tem chave:** ler os itens da foto (etapa 2) ou, se nenhum item foi lido, lançar os itens à mão.
+
+Para orientar a escolha, `indiciosDeChave` (`packages/sefaz/src/texto.ts`) procura no texto sinais de que o cupom tem chave, como "Chave de acesso", "NFC-e", "CF-e SAT", "Consulte pela chave" ou uma sequência longa de números. Com esses sinais, o caminho "digitar a chave" vem primeiro e destacado. Sem eles, vem primeiro "ler os itens".
+
+Também dá para lançar um cupom inteiro à mão, sem foto. Na tela de digitar a chave, o link "O cupom não tem chave?" leva para a leitura dos itens.
 
 ## Etapa 1: foto da chave de acesso
 

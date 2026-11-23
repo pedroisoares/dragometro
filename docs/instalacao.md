@@ -163,6 +163,7 @@ Toque em **Ler QR Code do cupom**, permita o uso da câmera e aponte para o QR C
 **Cupom sem QR Code (ou com QR Code apagado):** na mesma tela, toque em **"Cupom sem QR Code? Use a foto do cupom"** e fotografe o cupom inteiro, esticado, de cima e com boa luz.
 
 - **Com chave de acesso** (44 números perto do rodapé): o app abre a consulta da SEFAZ já preenchida. Você só digita o captcha e toca em Consultar.
+- **Chave não lida:** o app avisa "Não encontrei a chave de acesso" e pergunta. Se o cupom tem a chave, digite-a (os números lidos já vêm preenchidos). Se não tem, siga para ler os itens. O app indica qual caminho é mais provável, pelos sinais de chave que encontrou no texto da foto.
 - **Sem chave** (verdurões, feiras, caixas antigos): o app lê loja, data e itens da foto e mostra tudo para você conferir. Os itens em que a conta não fecha ficam destacados em laranja, e dá para abrir a foto para comparar. Corrija o que precisar e toque em **Salvar cupom**. Isso funciona também na versão Web.
 
 **Minhas compras:** toque num cupom para ver os itens dele, com a categoria do IPCA, peso × preço e total. Tocando num item, abre a página do produto. Se o nome da loja estiver errado, toque em **Corrigir nome**: ele muda em todas as compras daquela loja, e os próximos cupons com nome parecido caem na mesma loja. Se o app encontrar outra loja com nome parecido (a mesma loja guardada duas vezes), ele oferece **Juntar as lojas**.

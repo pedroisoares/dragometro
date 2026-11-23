@@ -114,3 +114,15 @@ export function urlConsultaNoTexto(texto: string): string | undefined {
 export function urlConsultaPorChave(chave: ChaveAcesso, textoDoCupom = ''): string | undefined {
   return urlConsultaNoTexto(textoDoCupom) ?? URL_CONSULTA_POR_CHAVE[chave.uf];
 }
+
+/**
+ * O texto da foto tem sinais de que o cupom TEM chave de acesso, mesmo que ela não tenha
+ * sido lida? ("Chave de acesso", "NFC-e", "CF-e SAT", "Consulte pela chave", "Protocolo de
+ * autorização" ou uma sequência longa de números.) Serve para orientar a pessoa entre
+ * "digite a chave" e "este cupom não tem chave".
+ */
+export function indiciosDeChave(texto: string): boolean {
+  const palavras =
+    /CHAVE\s*DE\s*ACESSO|NFC[\s-]?E\b|CF[\s-]?E\b|\bDANFE|CONSULTE\s+PELA|PROTOCOLO\s+DE\s+AUTORIZA|\bSAT\s*N/i;
+  return palavras.test(texto) || (digitosProvaveisDaChave(texto)?.length ?? 0) >= 30;
+}

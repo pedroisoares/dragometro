@@ -38,16 +38,20 @@ export function RevisarCupom({
   const [lojaConhecida, setLojaConhecida] = useState(false);
   const [data, setData] = useState(cupom.dataEmissao ? isoParaTexto(cupom.dataEmissao) : '');
   const [total, setTotal] = useState(cupom.valorTotal !== undefined ? dinheiro(cupom.valorTotal) : '');
+  const lidos = cupom.itens.length;
   const [itens, setItens] = useState<ItemEditavel[]>(() =>
-    cupom.itens.map((i, id) => ({
-      id,
-      descricao: i.descricao,
-      quantidade: Number.isFinite(i.quantidade) ? quantidadeTexto(i.quantidade, i.unidade) : '',
-      unidade: i.unidade === 'UN' && Number.isFinite(i.quantidade) && !Number.isInteger(i.quantidade) ? 'KG' : i.unidade,
-      valorUnitario: Number.isFinite(i.valorUnitario) ? dinheiro(i.valorUnitario) : '',
-      valorTotal: Number.isFinite(i.valorTotal) ? dinheiro(i.valorTotal) : '',
-      situacaoLida: i.situacao,
-    })),
+    // Nenhum item lido (ou lançamento à mão): começa com um item em branco.
+    lidos === 0
+      ? [{ id: 0, descricao: '', quantidade: '1', unidade: 'UN', valorUnitario: '', valorTotal: '' }]
+      : cupom.itens.map((i, id) => ({
+          id,
+          descricao: i.descricao,
+          quantidade: Number.isFinite(i.quantidade) ? quantidadeTexto(i.quantidade, i.unidade) : '',
+          unidade: i.unidade === 'UN' && Number.isFinite(i.quantidade) && !Number.isInteger(i.quantidade) ? 'KG' : i.unidade,
+          valorUnitario: Number.isFinite(i.valorUnitario) ? dinheiro(i.valorUnitario) : '',
+          valorTotal: Number.isFinite(i.valorTotal) ? dinheiro(i.valorTotal) : '',
+          situacaoLida: i.situacao,
+        })),
   );
   const [verFoto, setVerFoto] = useState(false);
   const [confirmarDiferenca, setConfirmarDiferenca] = useState(false);
@@ -115,10 +119,11 @@ export function RevisarCupom({
 
   return (
     <ScrollView contentContainerStyle={estilos.tela} keyboardShouldPersistTaps="handled">
-      <Text style={estilos.titulo}>Confira o cupom</Text>
+      <Text style={estilos.titulo}>{lidos ? 'Confira o cupom' : 'Lance os dados do cupom'}</Text>
       <Text style={estilos.suave}>
-        {itens.length} itens lidos da foto
-        {paraConferir ? ` · ${paraConferir} para conferir (destacados)` : ' · todas as contas fecham'}
+        {lidos
+          ? `${lidos} itens lidos da foto${paraConferir ? ` · ${paraConferir} para conferir (destacados)` : ' · todas as contas fecham'}`
+          : 'Preencha a loja, a data, o total e os itens como estão no cupom. Use "+ Adicionar item" para cada item.'}
       </Text>
 
       {fotoUri && (
@@ -128,22 +133,24 @@ export function RevisarCupom({
       )}
       {fotoUri && verFoto && <Image source={{ uri: fotoUri }} style={estilos.foto} resizeMode="contain" />}
 
-      <Campo rotulo="Loja (toque para corrigir o nome)" valor={loja} aoMudar={setLoja} />
+      <Campo rotulo={lidos ? 'Loja (toque para corrigir o nome)' : 'Loja'} valor={loja} aoMudar={setLoja} />
       {lojaConhecida && <Text style={estilos.suave}>Reconhecida como a mesma loja de compras anteriores.</Text>}
       <View style={estilos.linha}>
         <Campo rotulo="Data e hora" valor={data} aoMudar={setData} placeholder="dd/mm/aaaa hh:mm:ss" flex={3} erro={!dataIso} />
         <Campo rotulo="Total do cupom" valor={total} aoMudar={(t) => { setTotal(t); setConfirmarDiferenca(false); }} teclado="decimal-pad" flex={2} />
       </View>
 
-      <View style={[estilos.soma, { borderColor: somaBate ? cores.verde : cores.dragao }]}>
-        <Text style={[estilos.texto, { color: somaBate ? cores.verde : cores.dragao }]}>
-          {somaBate
-            ? `✓ A soma dos itens bate com o total (${reais(soma)})`
-            : `A soma dos itens (${reais(soma)}) não bate com o total${
-                Number.isFinite(totalCupom) ? ` (${reais(totalCupom)}): diferença de ${reais(Math.abs(soma - totalCupom))}` : ''
-              }`}
-        </Text>
-      </View>
+      {(soma > 0 || Number.isFinite(totalCupom)) && (
+        <View style={[estilos.soma, { borderColor: somaBate ? cores.verde : cores.dragao }]}>
+          <Text style={[estilos.texto, { color: somaBate ? cores.verde : cores.dragao }]}>
+            {somaBate
+              ? `✓ A soma dos itens bate com o total (${reais(soma)})`
+              : `A soma dos itens (${reais(soma)}) não bate com o total${
+                  Number.isFinite(totalCupom) ? ` (${reais(totalCupom)}): diferença de ${reais(Math.abs(soma - totalCupom))}` : ''
+                }`}
+          </Text>
+        </View>
+      )}
 
       {itens.map((item, k) => (
         <CartaoItem
@@ -231,7 +238,9 @@ function CartaoItem({
             ? '✓ corrigido pela conta, vale uma olhada'
             : item.quantidade && item.valorUnitario
               ? '⚠ confira com o cupom'
-              : '⚠ não deu para ler: complete com o cupom'}
+              : item.situacaoLida
+                ? '⚠ não deu para ler: complete com o cupom'
+                : '⚠ preencha quantidade, preço e total'}
       </Text>
     </View>
   );

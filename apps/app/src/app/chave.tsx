@@ -4,6 +4,7 @@ import {
   chaveValida,
   chavesNoTexto,
   digitosProvaveisDaChave,
+  indiciosDeChave,
   lerChave,
   lerNotaDaPagina,
   urlConsultaPorChave,
@@ -20,10 +21,21 @@ import { PaginaSefazVisivel } from '../lib/PaginaSefazVisivel';
 import { RevisarCupom } from '../lib/RevisarCupom';
 import { cores, espaco } from '../tema';
 
+/** O que a foto deu: o texto do OCR, os itens lidos e a imagem (para comparar na revisão). */
+interface FotoLida {
+  texto: string;
+  cupom: CupomFoto;
+  uri?: string;
+}
+
+/** Cupom vazio, para lançar os itens à mão. */
+const CUPOM_VAZIO: CupomFoto = { loja: {}, itens: [] };
+
 type Estado =
   | { tipo: 'escolher' }
   | { tipo: 'lendo-foto' }
-  | { tipo: 'confirmar'; digitos: string; textoOcr: string; aviso?: string }
+  | { tipo: 'confirmar'; digitos: string; textoOcr: string; aviso?: string; foto?: FotoLida }
+  | { tipo: 'sem-chave'; foto: FotoLida; digitos: string; indicios: boolean }
   | { tipo: 'sefaz'; chave: string; url: string }
   | { tipo: 'revisar'; cupom: CupomFoto; textoOcr: string; fotoUri?: string }
   | { tipo: 'pronto'; loja: string; data?: string; itens: number; total?: number; resultado: ResultadoSalvar }
@@ -57,20 +69,16 @@ export default function LerPelaChave() {
     try {
       const texto = await motorOcr.reconhecer({ base64 });
       const [chave] = chavesNoTexto(texto);
-      const cupom = lerCupomDoTexto(texto);
+      const lida: FotoLida = { texto, cupom: lerCupomDoTexto(texto), uri: foto.uri };
       if (chave) {
-        setEstado({ tipo: 'confirmar', digitos: chave.chave, textoOcr: texto });
-      } else if (cupom.itens.length > 0) {
-        // Sem chave: lê os itens da foto, para conferir.
-        setEstado({ tipo: 'revisar', cupom, textoOcr: texto, fotoUri: foto.uri });
+        setEstado({ tipo: 'confirmar', digitos: chave.chave, textoOcr: texto, foto: lida });
       } else {
+        // Sem chave lida: a pessoa decide se o cupom tem chave (digitar) ou não (ler os itens).
         setEstado({
-          tipo: 'confirmar',
+          tipo: 'sem-chave',
+          foto: lida,
           digitos: digitosProvaveisDaChave(texto) ?? '',
-          textoOcr: texto,
-          aviso:
-            'Não consegui ler a chave inteira. Confira os números com o cupom e corrija o que faltar ' +
-            '(ou tire outra foto, mais de perto e com boa luz).',
+          indicios: indiciosDeChave(texto),
         });
       }
     } catch (e) {
@@ -184,6 +192,10 @@ export default function LerPelaChave() {
     return <ConfirmarChave estado={estado} aoMudar={setEstado} />;
   }
 
+  if (estado.tipo === 'sem-chave') {
+    return <SemChave estado={estado} aoMudar={setEstado} />;
+  }
+
   // Escolher: foto ou digitação
   return (
     <ScrollView contentContainerStyle={estilos.tela}>
@@ -203,6 +215,11 @@ export default function LerPelaChave() {
         texto="Digitar a chave"
         secundario
         onPress={() => setEstado({ tipo: 'confirmar', digitos: '', textoOcr: '' })}
+      />
+      <Botao
+        texto="Lançar os itens à mão (sem foto)"
+        secundario
+        onPress={() => setEstado({ tipo: 'revisar', cupom: CUPOM_VAZIO, textoOcr: '' })}
       />
       <Text style={estilos.suave}>
         Dica: cupom esticado, foto de cima, com boa luz e sem cortar as bordas. Vale foto recebida pelo WhatsApp.
@@ -265,6 +282,103 @@ function ConfirmarChave({
         </Text>
       )}
 
+      {!valida && (
+        <Pressable
+          onPress={() =>
+            aoMudar({
+              tipo: 'revisar',
+              cupom: estado.foto?.cupom ?? CUPOM_VAZIO,
+              textoOcr: estado.textoOcr,
+              ...(estado.foto?.uri ? { fotoUri: estado.foto.uri } : {}),
+            })
+          }
+          hitSlop={6}
+        >
+          <Text style={estilos.link}>
+            O cupom não tem chave? {estado.foto ? 'Ler os itens da foto' : 'Lançar os itens à mão'}
+          </Text>
+        </Pressable>
+      )}
+
+      <Botao texto="Voltar" secundario onPress={() => aoMudar({ tipo: 'escolher' })} />
+    </ScrollView>
+  );
+}
+
+/**
+ * A foto não deu uma chave de acesso válida. Pode ser foto ruim (o cupom tem chave) ou
+ * cupom sem chave. A tela diz isso com clareza e deixa a pessoa escolher o caminho.
+ */
+function SemChave({
+  estado,
+  aoMudar,
+}: {
+  estado: Extract<Estado, { tipo: 'sem-chave' }>;
+  aoMudar: (e: Estado) => void;
+}) {
+  const { foto, digitos, indicios } = estado;
+  const itens = foto.cupom.itens.length;
+  const digitar = () =>
+    aoMudar({
+      tipo: 'confirmar',
+      digitos,
+      textoOcr: foto.texto,
+      foto,
+      ...(digitos ? { aviso: `Li ${digitos.length} dos 44 números. Confira com o cupom e complete o que faltar.` } : {}),
+    });
+  const lerItens = () =>
+    aoMudar({ tipo: 'revisar', cupom: foto.cupom, textoOcr: foto.texto, ...(foto.uri ? { fotoUri: foto.uri } : {}) });
+
+  const temChave = (
+    <View key="tem" style={[estilos.cartao, indicios && estilos.cartaoDestaque]}>
+      <Text style={estilos.subtitulo}>O cupom tem a chave de acesso?</Text>
+      <Text style={estilos.texto}>
+        São 44 números em grupos de 4, perto do rodapé, geralmente abaixo de "Consulte pela chave de acesso". Com ela, os
+        dados vêm direto da SEFAZ, sem erro de leitura.
+      </Text>
+      <Botao texto="Digitar a chave" onPress={digitar} secundario={!indicios} />
+      <Botao texto="Tirar outra foto, mais perto da chave" secundario onPress={() => aoMudar({ tipo: 'escolher' })} />
+    </View>
+  );
+  const semChave = (
+    <View key="sem" style={[estilos.cartao, !indicios && estilos.cartaoDestaque]}>
+      <Text style={estilos.subtitulo}>O cupom não tem chave?</Text>
+      <Text style={estilos.texto}>
+        Comum em verdurões, feiras, padarias e caixas antigos. O app usa os dados que estão no cupom (loja, data, itens e
+        valores) e você confere antes de salvar.
+      </Text>
+      {itens > 0 ? (
+        <Botao
+          texto={`Ler os itens da foto (${itens} ${itens === 1 ? 'item encontrado' : 'itens encontrados'})`}
+          onPress={lerItens}
+          secundario={indicios}
+        />
+      ) : (
+        <>
+          <Text style={[estilos.suave, { color: cores.dragao }]}>
+            Não consegui ler itens nesta foto. Tente outra foto (cupom esticado, de cima, com boa luz) ou lance os itens à
+            mão.
+          </Text>
+          <Botao texto="Lançar os itens à mão" onPress={lerItens} secundario={indicios} />
+        </>
+      )}
+    </View>
+  );
+
+  return (
+    <ScrollView contentContainerStyle={estilos.tela}>
+      <Text style={estilos.titulo}>Não encontrei a chave de acesso</Text>
+      <Text style={[estilos.texto, { color: cores.dragao }]}>
+        {digitos
+          ? `Li só ${digitos.length} dos 44 números da chave, e eles não formam uma chave válida.`
+          : 'Não li nenhuma sequência de 44 números nesta foto.'}
+      </Text>
+      <Text style={estilos.texto}>
+        {indicios
+          ? 'A foto tem sinais de chave (como "Chave de acesso" ou "NFC-e"): provavelmente ela está no cupom, mas não ficou legível.'
+          : 'Também não encontrei sinais de chave (como "Chave de acesso" ou "NFC-e"): talvez este cupom não tenha chave.'}
+      </Text>
+      {indicios ? [temChave, semChave] : [semChave, temChave]}
       <Botao texto="Voltar" secundario onPress={() => aoMudar({ tipo: 'escolher' })} />
     </ScrollView>
   );
@@ -286,6 +400,17 @@ const estilos = StyleSheet.create({
   tela: { padding: espaco(3), gap: espaco(2) },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: espaco(3), gap: espaco(2) },
   faixa: { flexDirection: 'row', alignItems: 'center', gap: espaco(1), padding: espaco(1.5), backgroundColor: cores.cartao },
+  subtitulo: { color: cores.texto, fontSize: 17, fontWeight: '700' },
+  cartao: {
+    backgroundColor: cores.cartao,
+    borderRadius: 12,
+    padding: espaco(2),
+    gap: espaco(1.25),
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  cartaoDestaque: { borderColor: cores.dragao },
+  link: { color: cores.dragao, fontWeight: '600', paddingVertical: espaco(0.5) },
   titulo: { color: cores.texto, fontSize: 20, fontWeight: '700' },
   texto: { color: cores.texto, fontSize: 15, lineHeight: 21, flexShrink: 1 },
   suave: { color: cores.textoSuave, fontSize: 13 },
