@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chavesNoTexto, digitosProvaveisDaChave, urlConsultaNoTexto, urlConsultaPorChave } from '../src';
+import { chavesNoTexto, digitosProvaveisDaChave, indiciosDeChave, urlConsultaNoTexto, urlConsultaPorChave } from '../src';
 
 // Chave fictícia válida (a mesma das fixtures de SP).
 const CHAVE = '35261143259548002298652260000291801000000007';
@@ -51,5 +51,17 @@ describe('endereço de consulta', () => {
   it('usa o endereço conhecido do estado quando o OCR não leu', () => {
     const [chave] = chavesNoTexto(AGRUPADA);
     expect(urlConsultaPorChave(chave!)).toBe('https://www.nfce.fazenda.sp.gov.br/consulta');
+  });
+});
+
+describe('indiciosDeChave', () => {
+  it('reconhece sinais de que o cupom tem chave', () => {
+    expect(indiciosDeChave('Consulte pela Chave de Acesso em www.nfce.fazenda.sp.gov.br')).toBe(true);
+    expect(indiciosDeChave('DANFE NFC-e - Documento Auxiliar')).toBe(true);
+    expect(indiciosDeChave('Extrato No. 123 do CF-e SAT')).toBe(true);
+  });
+
+  it('não vê chave num cupom de verdurão', () => {
+    expect(indiciosDeChave('HORTIFRUTI\nCUPOM No :0004521-14/11/2026\n0001 LIMAO TAHITI\nTOTAL 164,76')).toBe(false);
   });
 });
